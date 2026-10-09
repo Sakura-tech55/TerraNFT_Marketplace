@@ -19,6 +19,7 @@ import { WorkCard } from "@/components/WorkCard";
 import { Coin, type CoinGlyph, type CoinTone } from "@/components/visuals/Coin";
 import { CryptoIcon, COINS, type CoinId } from "@/components/visuals/CryptoIcon";
 import { TokenArt } from "@/components/visuals/TokenArt";
+import { LogoFull } from "@/components/Logo";
 import { assetSrc, creatorPhotoSrc } from "@/lib/media";
 import { fmtDate } from "@/lib/format";
 import { formatTez } from "@/lib/currency";
@@ -592,6 +593,7 @@ export default async function Home() {
             {CTA_COINS.map(([coin, left, top, size, anim]) => (
               <CryptoIcon key={coin} coin={coin} size={size} className={`deco ${anim}`} style={{ left, top }} />
             ))}
+            <LogoFull width={260} className="cta-logo" />
             {member ? (
               <>
                 <h2>The market is open</h2>

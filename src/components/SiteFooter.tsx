@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "./Logo";
+import { LogoFull } from "./Logo";
 import { CryptoIcon, COINS, COIN_IDS } from "./visuals/CryptoIcon";
 
 export function SiteFooter({ note }: { note?: string }) {
@@ -8,8 +8,8 @@ export function SiteFooter({ note }: { note?: string }) {
       <div className="shell">
         <div className="foot-grid">
           <div>
-            <Logo />
-            <p style={{ color: "var(--ink-3)", fontSize: 14, maxWidth: "34ch", margin: "16px 0 0" }}>
+            <LogoFull width={180} className="foot-logo" />
+            <p style={{ color: "var(--ink-3)", fontSize: 14, maxWidth: "34ch", margin: "10px 0 0" }}>
               Cadastra is the NFT marketplace by Terra Ledger: collect art, property and play on Tezos, with new releases every season.
             </p>
             <div className="foot-coins" aria-label="Currencies tracked">

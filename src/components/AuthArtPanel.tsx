@@ -42,7 +42,7 @@ export function AuthArtPanel({ email, handle, caption }: { email: string; handle
             <div className="passcard-row">
               <div>
                 <div className="k">Pass ID</div>
-                <div className="v">{valid ? passIdFrom(seed) : "LP-————-————"}</div>
+                <div className="v">{valid ? passIdFrom(seed) : "CP-————-————"}</div>
               </div>
               <div>
                 <div className="k">Wallet</div>

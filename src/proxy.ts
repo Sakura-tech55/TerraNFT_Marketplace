@@ -18,7 +18,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
-const PUBLIC_EXACT = new Set(["/", "/login", "/register", "/tezos"]);
+const PUBLIC_EXACT = new Set(["/", "/login", "/register", "/tezos", "/manifest.webmanifest"]);
 const PUBLIC_PREFIX = ["/review/", "/api/auth/", "/api/media/", "/api/health"];
 
 export function isPublicPath(pathname: string): boolean {

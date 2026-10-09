@@ -1,19 +1,18 @@
-/* Identity mark: a minted coin carrying three stacked plates — the layers of a cadastre */
-export function LogoMark({ size = 30 }: { size?: number }) {
+import Image from "next/image";
+
+/* The Cadastra emblem (public/brand, made from the marketplace logo file) */
+export function LogoMark({ size = 36 }: { size?: number }) {
+  return <Image src="/brand/cadastra-mark.webp" alt="" width={size} height={size} priority aria-hidden="true" />;
+}
+
+/* The full logo — emblem and wordmark — for larger places */
+export function LogoFull({ width = 200, className }: { width?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <circle cx="20" cy="20" r="19" fill="var(--lime)" />
-      <circle cx="20" cy="20" r="15.5" stroke="#0b0b10" strokeOpacity=".22" strokeWidth="1" />
-      <g fill="#0b0b10">
-        <path d="M20 9 L29 14 L20 19 L11 14 Z" />
-        <path d="M11 18.2 L20 23.2 L29 18.2 L29 20.6 L20 25.6 L11 20.6 Z" opacity=".7" />
-        <path d="M11 23.4 L20 28.4 L29 23.4 L29 25.8 L20 30.8 L11 25.8 Z" opacity=".4" />
-      </g>
-    </svg>
+    <Image src="/brand/cadastra-logo.webp" alt="Cadastra" width={width} height={Math.round(width * 985 / 1196)} className={className} />
   );
 }
 
-export function Logo({ size = 30 }: { size?: number }) {
+export function Logo({ size = 36 }: { size?: number }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       <LogoMark size={size} />
