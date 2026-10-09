@@ -27,6 +27,18 @@ if (major < 22 || (major === 22 && minor < 18)) {
   process.exit(1);
 }
 
+/* On Vercel the build prepares the hosted database. Stop with a clear message if the
+   settings production needs are missing, rather than deploy a site that cannot work. */
+if (process.env.VERCEL) {
+  const missing = [];
+  if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) missing.push("DATABASE_URL: add a PostgreSQL database (Vercel > Storage)");
+  if ((process.env.SESSION_SECRET ?? "").length < 16) missing.push("SESSION_SECRET: 16+ random characters (openssl rand -base64 32)");
+  if (missing.length) {
+    console.error("\nCadastra cannot be deployed yet. Add these in Vercel > Settings > Environment Variables:\n  - " + missing.join("\n  - ") + "\n");
+    process.exit(1);
+  }
+}
+
 const run = (script, args = [], { optional = false } = {}) => {
   /* the seed files are TypeScript loaded directly; Node's notice about that is noise here */
   const r = spawnSync(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", path.join("scripts", script), ...args], {

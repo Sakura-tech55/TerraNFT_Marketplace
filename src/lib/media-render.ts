@@ -11,13 +11,18 @@
 
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 import { COMPANY_NAME } from "./site";
 
 export const MEDIA_ROOT = path.join(process.cwd(), "private");
 /* runtime data, not source: tell the bundler not to trace it into the build */
-const CACHE_DIR = path.resolve(/*turbopackIgnore: true*/ process.env.MEDIA_CACHE_DIR ?? ".data/media-cache");
+/* serverless hosts (Vercel) can write only to the temp folder */
+const CACHE_DIR = path.resolve(
+  /*turbopackIgnore: true*/ process.env.MEDIA_CACHE_DIR ??
+    (process.env.VERCEL ? path.join(tmpdir(), "media-cache") : ".data/media-cache"),
+);
 
 /* Bump when the rendering below changes, so old derivatives are not reused. */
 const RENDER_VERSION = 2;

@@ -4,7 +4,7 @@
 import { mkdir } from "node:fs/promises";
 
 export async function connect() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (url) {
     const { default: pg } = await import("pg");
     const client = new pg.Client({ connectionString: url });

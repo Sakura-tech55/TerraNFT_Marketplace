@@ -14,14 +14,23 @@ import * as schema from "./schema";
 
 type Db = Awaited<ReturnType<typeof create>>;
 
+/* Vercel's Postgres integrations set POSTGRES_URL; anything else uses DATABASE_URL. */
+export const databaseUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+
 async function create() {
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
 
   if (url) {
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { Pool } = await import("pg");
     const pool = new Pool({ connectionString: url, max: 10 });
     return drizzle(pool, { schema });
+  }
+
+  /* PGlite writes to local disk, which serverless hosts do not have: every page that reads
+     the database would fail. Say what is missing instead. */
+  if (process.env.VERCEL) {
+    throw new Error("No database configured: add a PostgreSQL database to the Vercel project so DATABASE_URL is set, then redeploy.");
   }
 
   const { drizzle } = await import("drizzle-orm/pglite");

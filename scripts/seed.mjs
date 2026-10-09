@@ -36,7 +36,7 @@ const { CATEGORY_SEED, WORK_TAXONOMY, DROP_TAXONOMY, CATEGORY_STATS_SEED } =
   await import(src("taxonomy.ts"));
 
 /* ---------- connection ---------- */
-const url = process.env.DATABASE_URL;
+const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 let query, close, target;
 if (url) {
   const { default: pg } = await import("pg");

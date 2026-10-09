@@ -14,7 +14,8 @@
     "catalog:import": "node scripts/catalog-import.mjs",
     "creators:photos": "node scripts/creator-photos.mjs",
     "catalog:fetch": "node scripts/catalog-fetch.mjs",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs",
+    "build:production": "node scripts/setup.mjs && next build"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
