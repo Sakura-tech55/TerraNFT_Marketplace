@@ -12,7 +12,8 @@
    one process at a time, so they never overlap with each other or the server. */
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { randomBytes } from "node:crypto";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { connect } from "./lib/db.mjs";
 
@@ -27,15 +28,24 @@ if (major < 22 || (major === 22 && minor < 18)) {
   process.exit(1);
 }
 
-/* On Vercel the build prepares the hosted database. Stop with a clear message if the
-   settings production needs are missing, rather than deploy a site that cannot work. */
+/* On a serverless host (Vercel) the build prepares everything the site needs:
+     - DATABASE_URL set: the hosted PostgreSQL, which keeps accounts;
+     - DATABASE_URL unset: a fresh demo database in .data/deploy-db that ships with the
+       site — each server starts from a copy of it, so accounts are temporary;
+     - SESSION_SECRET unset: a random secret for this deployment in .data/deploy-secret,
+       built into the server code by next.config.ts. Never committed. */
 if (process.env.VERCEL) {
-  const missing = [];
-  if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) missing.push("DATABASE_URL: add a PostgreSQL database (Vercel > Storage)");
-  if ((process.env.SESSION_SECRET ?? "").length < 16) missing.push("SESSION_SECRET: 16+ random characters (openssl rand -base64 32)");
-  if (missing.length) {
-    console.error("\nCadastra cannot be deployed yet. Add these in Vercel > Settings > Environment Variables:\n  - " + missing.join("\n  - ") + "\n");
-    process.exit(1);
+  const data = path.join(ROOT, ".data");
+  mkdirSync(data, { recursive: true });
+  if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+    say("No DATABASE_URL: preparing a demo database that ships with the site (accounts are temporary).");
+    say("Connect a PostgreSQL database in Vercel (Storage) to keep accounts, then redeploy.");
+    process.env.PGLITE_DIR = path.join(data, "deploy-db"); /* the scripts below inherit it */
+    rmSync(process.env.PGLITE_DIR, { recursive: true, force: true });
+  }
+  if ((process.env.SESSION_SECRET ?? "").length < 16) {
+    writeFileSync(path.join(data, "deploy-secret"), randomBytes(32).toString("base64url"));
+    say("No SESSION_SECRET: generated one for this deployment.");
   }
 }
 

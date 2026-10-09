@@ -12,8 +12,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const checks: Record<string, unknown> = {
-    databaseConfigured: Boolean(databaseUrl()) || !process.env.VERCEL,
-    sessionSecretSet: (process.env.SESSION_SECRET ?? "").length >= 16,
+    /* persistent: hosted PostgreSQL. temporary: the demo database the build shipped
+       (accounts reset when a server restarts). local: a developer's machine. */
+    databaseMode: databaseUrl() ? "persistent" : process.env.VERCEL ? "temporary" : "local",
+    sessionSecret: (process.env.SESSION_SECRET ?? "").length >= 16
+      ? "configured"
+      : (process.env.DEPLOY_SESSION_SECRET ?? "").length >= 16 ? "generated for this deployment" : "missing",
     imagesBundled: await access(path.join(process.cwd(), "private", "nft", "catalog.csv")).then(() => true, () => false),
   };
 
@@ -40,7 +44,7 @@ export async function GET() {
           : "Database error (see the deployment's runtime logs)";
   }
 
-  const ok = checks.databaseConfigured && checks.sessionSecretSet && checks.databaseConnected
+  const ok = checks.sessionSecret !== "missing" && checks.databaseConnected === true
     && Number(checks.listedWorks ?? 0) > 0;
   return Response.json({ ok, ...checks }, { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } });
 }

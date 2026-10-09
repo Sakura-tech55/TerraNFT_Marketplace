@@ -22,7 +22,9 @@ export class MissingSecretError extends Error {
 }
 
 function secret(): string {
-  const s = process.env.SESSION_SECRET;
+  /* DEPLOY_SESSION_SECRET is generated per deployment by the build when SESSION_SECRET
+     is not set (scripts/setup.mjs, next.config.ts) */
+  const s = process.env.SESSION_SECRET || process.env.DEPLOY_SESSION_SECRET;
   if (s && s.length >= 16) return s;
   /* Fail closed: without a real secret, production issues no sessions and accepts none. */
   if (process.env.NODE_ENV === "production") throw new MissingSecretError();
