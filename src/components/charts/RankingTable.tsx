@@ -4,12 +4,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { CATEGORIES, DESIGNS, usd, type Category } from "@/lib/data";
+import { formatTez, usdFromMutez } from "@/lib/currency";
 import { assetSrc } from "@/lib/media";
+import type { WorkView } from "@/lib/repo";
 
-export function RankingTable() {
-  const [cat, setCat] = useState<Category>("Entertainment");
-  const rows = DESIGNS.filter((d) => d.category === cat).sort((a, b) => b.likes - a.likes);
+export function RankingTable({ works, categories, usdRate }: { works: WorkView[]; categories: string[]; usdRate: number }) {
+  const [cat, setCat] = useState<string>(categories[0] ?? "");
+  const rows = works.filter((d) => d.category === cat).sort((a, b) => b.likes - a.likes);
 
   return (
     <>
@@ -18,7 +19,7 @@ export function RankingTable() {
           <b>Ranking by category</b>
         </div>
         <div className="filters">
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button key={c} className="chip" data-on={c === cat} onClick={() => setCat(c)}>
               {c}
             </button>
@@ -51,8 +52,8 @@ export function RankingTable() {
                   </span>
                 </span>
               </td>
-              <td className="n">{d.priceEth.toFixed(2)} ETH</td>
-              <td className="n" style={{ color: "var(--ink-3)" }}>{usd(d.priceEth)}</td>
+              <td className="n">{formatTez(d.priceMutez)}</td>
+              <td className="n" style={{ color: "var(--ink-3)" }}>{usdFromMutez(d.priceMutez, usdRate)}</td>
               <td className="n">{d.likes.toLocaleString("en-US")}</td>
               <td className="n" style={{ color: "var(--ink-3)" }}>{d.owners.toLocaleString("en-US")}</td>
             </tr>

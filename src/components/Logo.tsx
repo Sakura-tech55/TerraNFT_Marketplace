@@ -1,4 +1,4 @@
-/* Identity mark: a minted coin carrying three stacked ledger plates */
+/* Identity mark: a minted coin carrying three stacked plates — the layers of a cadastre */
 export function LogoMark({ size = 30 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
@@ -21,13 +21,20 @@ export function Logo({ size = 30 }: { size?: number }) {
         style={{
           fontFamily: "var(--display)",
           fontWeight: 600,
-          fontSize: 15,
+          fontSize: 17,
           letterSpacing: "-0.02em",
           color: "var(--ink)",
           whiteSpace: "nowrap",
+          display: "inline-flex",
+          flexDirection: "column",
+          lineHeight: 1.05,
         }}
       >
-        Terra Ledger
+        Cadastra
+        <small style={{ display: "block", fontFamily: "var(--mono)", fontWeight: 400, fontSize: 9.5, letterSpacing: ".12em",
+          textTransform: "uppercase", color: "var(--ink-3)", marginTop: 1 }}>
+          by Terra Ledger
+        </small>
       </span>
     </span>
   );

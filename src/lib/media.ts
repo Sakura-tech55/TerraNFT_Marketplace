@@ -13,3 +13,6 @@
 /** URL for an asset's artwork. `review` is a designer review token, which unlocks that one asset. */
 export const assetSrc = (id: string, review?: string) =>
   `/api/media/${encodeURIComponent(id)}${review ? `?rt=${encodeURIComponent(review)}` : ""}`;
+
+/** URL for a creator's confirmed portrait. Only valid when the creator has a `photo`. */
+export const creatorPhotoSrc = (slug: string) => `/api/media/creator/${encodeURIComponent(slug)}`;

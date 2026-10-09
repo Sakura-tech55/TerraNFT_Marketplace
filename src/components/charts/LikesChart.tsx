@@ -3,17 +3,20 @@
 /* GREEN — fairly priced and most liked */
 
 import { useState } from "react";
-import { MOST_LIKED } from "@/lib/data";
+import { formatTez } from "@/lib/currency";
+import type { LikedView } from "@/lib/repo";
 
 const GREEN = "var(--sig-green)";
+const FAIR_BAND = 5; /* percent from the estimate that still counts as "fairly priced" */
 
-export function LikesChart() {
-  const data = MOST_LIKED;
+export function LikesChart({ data }: { data: LikedView[] }) {
   const max = Math.max(...data.map((d) => d.likes));
   const [hover, setHover] = useState<number | null>(null);
   const active = hover ?? 0;
   const d0 = data[active];
-  const gap = ((d0.fairEth - d0.priceEth) / d0.fairEth) * 100;
+  const gapOf = (d: LikedView) => ((d.fairMutez - d.priceMutez) / d.fairMutez) * 100;
+  const gap = gapOf(d0);
+  const withinBand = data.filter((d) => Math.abs(gapOf(d)) <= FAIR_BAND).length;
 
   return (
     <>
@@ -22,7 +25,7 @@ export function LikesChart() {
           {d0.likes.toLocaleString("en-US")}
         </p>
         <p className="label" style={{ letterSpacing: ".1em" }}>
-          {d0.name} · {d0.priceEth.toFixed(2)} ETH ·{" "}
+          {d0.name} · {formatTez(d0.priceMutez)} ·{" "}
           {gap >= 0 ? `${gap.toFixed(1)}% under fair value` : `${Math.abs(gap).toFixed(1)}% over fair value`}
         </p>
       </div>
@@ -83,7 +86,8 @@ export function LikesChart() {
         })}
       </div>
       <p className="chart-note">
-        The seven most-liked designs trading within 5% of their estimated fair value.
+        The {data.length} most-liked works carrying a fair-value estimate. {withinBand} of them trade
+        within {FAIR_BAND}% of that estimate.
       </p>
     </>
   );

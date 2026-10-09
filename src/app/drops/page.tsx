@@ -4,12 +4,17 @@ import Link from "next/link";
 import { TopBar } from "@/components/TopBar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Coin, type CoinGlyph, type CoinTone } from "@/components/visuals/Coin";
-import { DROPS, PARTNERS, partnerOf, type Drop } from "@/lib/drops";
+import { CryptoIcon, type CoinId } from "@/components/visuals/CryptoIcon";
 import { assetSrc } from "@/lib/media";
+import { monthShort } from "@/lib/format";
+import { formatTez } from "@/lib/currency";
+import { listDrops, listPartners, type DropView, type PartnerView } from "@/lib/repo";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Drops — Terra Ledger",
-  description: "New NFT creations released every season with Terra Ledger's long-term client partners.",
+  title: "Drops — Cadastra",
+  description: "New NFT creations released every season with Cadastra's long-term client partners.",
 };
 
 const HOW: { glyph: CoinGlyph; tone: CoinTone; title: string; text: string }[] = [
@@ -20,18 +25,12 @@ const HOW: { glyph: CoinGlyph; tone: CoinTone; title: string; text: string }[] =
   { glyph: "gem", tone: "lime", title: "Next season", text: "Results shape the partner's next release" },
 ];
 
-const MINTED_PCT = 64; /* demo figure for the live drop */
-
-const month = (iso: string) =>
-  new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-
-function CalRow({ d }: { d: Drop }) {
-  const p = partnerOf(d.partner);
+function CalRow({ d }: { d: DropView }) {
   return (
     <div className="cal-row">
       <div className="cal-date">
         <b>{d.date.slice(8, 10)}</b>
-        <small>{month(d.date)}</small>
+        <small>{monthShort(d.date)}</small>
       </div>
       <div className="cal-thumb">
         <Image src={assetSrc(d.id)} alt="" fill sizes="64px" unoptimized />
@@ -39,11 +38,11 @@ function CalRow({ d }: { d: Drop }) {
       <div className="cal-title">
         <b>{d.title}</b>
         <small>
-          {p?.name} × {d.studio} · {d.season}
+          {d.partnerName} × {d.studio} · {d.season}
         </small>
       </div>
       <div className="cal-price">
-        {d.priceEth} ETH
+        {formatTez(d.priceMutez)}
         <br />
         <span style={{ color: "var(--ink-4)" }}>{d.supply.toLocaleString("en-US")} supply</span>
       </div>
@@ -52,23 +51,31 @@ function CalRow({ d }: { d: Drop }) {
   );
 }
 
-export default function DropsPage() {
-  const live = DROPS.find((d) => d.status === "Live");
-  const upcoming = DROPS.filter((d) => d.status === "Upcoming").sort((a, b) => a.date.localeCompare(b.date));
-  const past = DROPS.filter((d) => d.status === "Sold out").sort((a, b) => b.date.localeCompare(a.date));
-  const livePartner = live ? partnerOf(live.partner) : undefined;
+export default async function DropsPage() {
+  const [drops, partners] = await Promise.all([listDrops(), listPartners()]);
+
+  const live = drops.find((d) => d.status === "Live");
+  const upcoming = drops.filter((d) => d.status === "Upcoming").sort((a, b) => a.date.localeCompare(b.date));
+  const past = drops.filter((d) => d.status === "Sold out").sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <>
       <TopBar />
       <main className="shell">
-        <header className="page-head">
+        <header className="page-head page-head-coins">
+          <div>
           <p className="kicker">Drops</p>
           <h1>New creations, every season</h1>
           <p>
             Our client partners don&rsquo;t launch once. They release season after season on Terra
             Ledger, working with creators to bring collectors something new.
           </p>
+          </div>
+          <div className="head-coins" aria-hidden="true">
+            {(["sol", "xtz", "eth", "pol"] as CoinId[]).map((c, k) => (
+              <CryptoIcon key={c} coin={c} size={[60, 48, 54, 40][k]} className={["float-a", "float-b", "float-c", "float-b"][k]} />
+            ))}
+          </div>
         </header>
 
         {live && (
@@ -81,11 +88,11 @@ export default function DropsPage() {
               <h2>{live.title}</h2>
               <p style={{ margin: 0, color: "var(--ink-2)" }}>{live.blurb}</p>
               <p className="label" style={{ margin: 0 }}>
-                {livePartner?.name} × {live.studio} · {live.season}
+                {live.partnerName} × {live.studio} · {live.season}
               </p>
               <div className="facts">
                 <div>
-                  <b>{live.priceEth} ETH</b>
+                  <b>{formatTez(live.priceMutez)}</b>
                   <small>Mint price</small>
                 </div>
                 <div>
@@ -99,12 +106,12 @@ export default function DropsPage() {
               </div>
               <div>
                 <div className="meter">
-                  <i style={{ width: `${MINTED_PCT}%` }} />
+                  <i style={{ width: `${live.mintedPct}%` }} />
                 </div>
-                <p className="result-count" style={{ margin: "8px 0 0" }}>{MINTED_PCT}% minted</p>
+                <p className="result-count" style={{ margin: "8px 0 0" }}>{live.mintedPct}% minted</p>
               </div>
               <div>
-                <Link href={`/explore?category=${encodeURIComponent(live.category)}`} className="btn btn-primary">
+                <Link href={`/explore/${live.categorySlug}`} className="btn btn-primary">
                   Collect now
                 </Link>
               </div>
@@ -162,9 +169,9 @@ export default function DropsPage() {
             </div>
           </div>
           <div className="partners">
-            {PARTNERS.map((p) => (
+            {partners.map((p: PartnerView) => (
               <div className="partner" key={p.slug}>
-                <Coin size={56} tone={p.tone} glyph="ledger" uid={`pt-${p.slug}`} />
+                <Coin size={56} tone={p.tone as CoinTone} glyph="ledger" uid={`pt-${p.slug}`} />
                 <h3>{p.name}</h3>
                 <span className="sector">{p.sector}</span>
                 <div className="pips" aria-label={`${p.seasons} seasons launched`}>

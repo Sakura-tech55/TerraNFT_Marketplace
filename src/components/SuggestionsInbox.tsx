@@ -1,23 +1,30 @@
 "use client";
 
-/* Designer feedback, as seen by the sales team. */
+/* Designer feedback, as seen by the sales team.
 
-import { useState } from "react";
-import { DESIGNS } from "@/lib/data";
-import { useSuggestions, setSuggestionStatus } from "@/lib/suggestions";
+   Suggestions are database rows now, so a note left by a designer
+   on their own machine reaches the team on every other machine.
+   Status changes go through a server action. */
 
-const AGO = (iso: string) => {
-  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
-  return `${Math.round(mins / 1440)}d ago`;
-};
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { setSuggestionStatus } from "@/lib/actions";
+import { AGO } from "@/lib/format";
+import type { InternalWorkView, SuggestionView } from "@/lib/repo";
 
-export function SuggestionsInbox() {
-  const all = useSuggestions();
+export function SuggestionsInbox({ suggestions }: { suggestions: SuggestionView[] }) {
   const [onlyOpen, setOnlyOpen] = useState(false);
-  const list = onlyOpen ? all.filter((s) => s.status === "Open") : all;
-  const openCount = all.filter((s) => s.status === "Open").length;
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const list = onlyOpen ? suggestions.filter((s) => s.status === "Open") : suggestions;
+  const openCount = suggestions.filter((s) => s.status === "Open").length;
+
+  const move = (id: number, status: "Open" | "Acknowledged" | "Applied") =>
+    startTransition(async () => {
+      await setSuggestionStatus(id, status);
+      router.refresh();
+    });
 
   return (
     <>
@@ -27,7 +34,7 @@ export function SuggestionsInbox() {
         </div>
         <div className="filters">
           <button className="chip" data-on={!onlyOpen} onClick={() => setOnlyOpen(false)}>
-            All {all.length}
+            All {suggestions.length}
           </button>
           <button className="chip" data-on={onlyOpen} onClick={() => setOnlyOpen(true)}>
             Open {openCount}
@@ -43,42 +50,39 @@ export function SuggestionsInbox() {
           </p>
         </div>
       ) : (
-        <ul className="inbox">
-          {list.map((s) => {
-            const design = DESIGNS.find((d) => d.id === s.designId);
-            return (
-              <li key={s.id}>
-                <div className="inbox-top">
-                  <span className="inbox-who">
-                    <b>{s.author}</b>
-                    <span className="inbox-asset">
-                      {s.designId} · {design?.name ?? "Unknown asset"}
-                    </span>
+        <ul className="inbox" style={pending ? { opacity: 0.6 } : undefined}>
+          {list.map((s) => (
+            <li key={s.id}>
+              <div className="inbox-top">
+                <span className="inbox-who">
+                  <b>{s.author}</b>
+                  <span className="inbox-asset">
+                    {s.workCode} · {s.workTitle}
                   </span>
-                  <span className={`pill pill-${s.status.toLowerCase()}`}>{s.status}</span>
-                </div>
-                <p>{s.body}</p>
-                <div className="inbox-actions">
-                  <span className="label" style={{ marginRight: 4 }}>{AGO(s.createdAt)}</span>
-                  {s.status !== "Acknowledged" && (
-                    <button className="mini" onClick={() => setSuggestionStatus(s.id, "Acknowledged")}>
-                      Acknowledge
-                    </button>
-                  )}
-                  {s.status !== "Applied" && (
-                    <button className="mini" onClick={() => setSuggestionStatus(s.id, "Applied")}>
-                      Mark applied
-                    </button>
-                  )}
-                  {s.status !== "Open" && (
-                    <button className="mini" onClick={() => setSuggestionStatus(s.id, "Open")}>
-                      Reopen
-                    </button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+                </span>
+                <span className={`pill pill-${s.status.toLowerCase()}`}>{s.status}</span>
+              </div>
+              <p>{s.body}</p>
+              <div className="inbox-actions">
+                <span className="label" style={{ marginRight: 4 }}>{AGO(s.createdAt)}</span>
+                {s.status !== "Acknowledged" && (
+                  <button className="mini" disabled={pending} onClick={() => move(s.id, "Acknowledged")}>
+                    Acknowledge
+                  </button>
+                )}
+                {s.status !== "Applied" && (
+                  <button className="mini" disabled={pending} onClick={() => move(s.id, "Applied")}>
+                    Mark applied
+                  </button>
+                )}
+                {s.status !== "Open" && (
+                  <button className="mini" disabled={pending} onClick={() => move(s.id, "Open")}>
+                    Reopen
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
         </ul>
       )}
     </>
@@ -86,8 +90,7 @@ export function SuggestionsInbox() {
 }
 
 /* Assets waiting on a designer, with the link to send them. */
-export function ReviewLinks() {
-  const pending = DESIGNS.filter((d) => d.status !== "Live");
+export function ReviewLinks({ pending }: { pending: InternalWorkView[] }) {
   const [copied, setCopied] = useState<string | null>(null);
 
   const copy = async (token: string) => {

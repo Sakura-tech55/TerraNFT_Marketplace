@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { CryptoIcon, COINS, COIN_IDS } from "./visuals/CryptoIcon";
 
 export function SiteFooter({ note }: { note?: string }) {
   return (
@@ -9,21 +10,27 @@ export function SiteFooter({ note }: { note?: string }) {
           <div>
             <Logo />
             <p style={{ color: "var(--ink-3)", fontSize: 14, maxWidth: "34ch", margin: "16px 0 0" }}>
-              Collect, sell and launch NFTs — with new releases every season from long-term partners.
+              Cadastra is the NFT marketplace by Terra Ledger: collect art, property and play on Tezos, with new releases every season.
             </p>
+            <div className="foot-coins" aria-label="Currencies tracked">
+              {COIN_IDS.map((c) => (
+                <CryptoIcon key={c} coin={c} size={22} title={COINS[c].name} />
+              ))}
+            </div>
           </div>
           <div>
             <h4>Marketplace</h4>
             <ul>
               <li><Link href="/explore">Explore assets</Link></li>
               <li><Link href="/drops">Drop calendar</Link></li>
-              <li><Link href="/creators">Top creators</Link></li>
+              <li><Link href="/creators">Top artists</Link></li>
+              <li><Link href="/tezos">New to Tezos?</Link></li>
             </ul>
           </div>
           <div>
             <h4>Account</h4>
             <ul>
-              <li><Link href="/register">Create account</Link></li>
+              <li><Link href="/register">Create free account</Link></li>
               <li><Link href="/login">Sign in</Link></li>
               <li><Link href="/dashboard">Dashboard</Link></li>
             </ul>

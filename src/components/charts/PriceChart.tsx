@@ -3,59 +3,69 @@
 /* RED — highest price achieved today, hour by hour */
 
 import { useState } from "react";
-import { TOP_SALES_TODAY, usd } from "@/lib/data";
+import { formatTez, formatTezShort, usdFromMutez } from "@/lib/currency";
+import type { SalePoint } from "@/lib/repo";
 
 const W = 520;
 const H = 206;
-const L = 40;
+const L = 52;
 const R = 14;
 const T = 18;
 const B = 34;
 const RED = "var(--sig-red)";
 
-export function PriceChart() {
-  const data = TOP_SALES_TODAY;
-  const peakIdx = data.reduce((b, d, i) => (d.eth > data[b].eth ? i : b), 0);
+/** Round an axis maximum up to something readable (1, 2 or 5 × a power of ten). */
+function niceMax(v: number) {
+  if (v <= 0) return 1;
+  const pow = 10 ** Math.floor(Math.log10(v));
+  const n = v / pow;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
+}
+
+export function PriceChart({ data, usdRate }: { data: SalePoint[]; usdRate: number }) {
+  const peakIdx = data.reduce((b, d, i) => (d.mutez > data[b].mutez ? i : b), 0);
   const [hover, setHover] = useState<number | null>(null);
   const active = hover ?? peakIdx;
   const d0 = data[active];
+  const peak = data[peakIdx];
 
-  const yMax = 30;
+  const yMax = niceMax(Math.max(...data.map((d) => d.mutez)));
+  const ticks = [0, yMax / 2, yMax];
   const px = (i: number) => L + (i / (data.length - 1)) * (W - L - R);
   const py = (v: number) => H - B - (v / yMax) * (H - B - T);
 
-  const line = data.map((d, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(d.eth).toFixed(1)}`).join(" ");
+  const line = data.map((d, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(d.mutez).toFixed(1)}`).join(" ");
   const area = `${line} L${px(data.length - 1).toFixed(1)},${H - B} L${px(0).toFixed(1)},${H - B} Z`;
 
   return (
     <>
       <div className="panel-body" style={{ paddingBottom: 6 }}>
         <p className="chart-figure" style={{ color: RED }}>
-          {d0.eth.toFixed(2)} ETH
+          {formatTez(d0.mutez)}
         </p>
         <p className="label" style={{ letterSpacing: ".1em" }}>
-          {d0.hour}:00 UTC · {d0.name} · {usd(d0.eth)}
+          {d0.hour}:00 UTC · {d0.name} · {usdFromMutez(d0.mutez, usdRate)}
         </p>
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="chartsvg"
         role="img"
-        aria-label="Highest sale price by hour today. Peak of 27.45 ETH on Mercer Block at 16:00 UTC."
+        aria-label={`Highest sale price by hour today. Peak of ${formatTez(peak.mutez)} on ${peak.name} at ${peak.hour}:00 UTC.`}
         onMouseLeave={() => setHover(null)}
       >
         <defs>
           <linearGradient id="redfill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ff4d4d" stopOpacity="0.34" />
-            <stop offset="100%" stopColor="#ff4d4d" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="#ff5a5a" stopOpacity="0.34" />
+            <stop offset="100%" stopColor="#ff5a5a" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
-        {[0, 10, 20, 30].map((v) => (
+        {ticks.map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={py(v)} y2={py(v)} stroke="var(--line)" strokeWidth="1" />
             <text x={L - 8} y={py(v) + 3.5} fontSize="9.5" fill="var(--ink-4)" textAnchor="end">
-              {v}
+              {formatTezShort(v)}
             </text>
           </g>
         ))}
@@ -72,7 +82,7 @@ export function PriceChart() {
           strokeWidth="1"
           strokeDasharray="3 3"
         />
-        <circle cx={px(active)} cy={py(d0.eth)} r="5" fill={RED} stroke="var(--panel)" strokeWidth="2" />
+        <circle cx={px(active)} cy={py(d0.mutez)} r="5" fill={RED} stroke="var(--panel)" strokeWidth="2" />
 
         {data.map((d, i) => (
           <g key={d.hour}>
@@ -96,11 +106,12 @@ export function PriceChart() {
           Hour (UTC)
         </text>
         <text x={W - R} y={H - 4} fontSize="9" fill="var(--ink-4)" textAnchor="end" letterSpacing="1.4">
-          ETH
+          tez
         </text>
       </svg>
       <p className="chart-note">
-        Highest sale settled in each hour. Mercer Block set today&rsquo;s high at 27.45 ETH at 16:00 UTC.
+        Highest sale settled in each hour. {peak.name} set today&rsquo;s high at {formatTez(peak.mutez)} at{" "}
+        {peak.hour}:00 UTC.
       </p>
     </>
   );

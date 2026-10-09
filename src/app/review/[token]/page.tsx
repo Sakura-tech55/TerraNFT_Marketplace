@@ -1,36 +1,38 @@
-"use client";
-
 /* ============================================================
    Designer review surface — no sign-in required.
 
    The sales team shares /review/<token> with the designer who
-   made the asset. They can see the brief, the work as published
-   and how it is performing, and leave improvement suggestions.
+   made the asset. They see the brief, the work as published and
+   how it is performing, and leave improvement suggestions.
+
+   The token also unlocks the clean artwork for that one asset
+   (see /api/media).
    ============================================================ */
 
-import { use, useState } from "react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { findByToken, usd } from "@/lib/data";
+import { SuggestionForm } from "@/components/SuggestionForm";
 import { assetSrc } from "@/lib/media";
-import { useSuggestions, addSuggestion } from "@/lib/suggestions";
+import { AGO } from "@/lib/format";
+import { formatTez, usdFromMutez } from "@/lib/currency";
+import { getXtzUsd } from "@/lib/price";
+import { getWorkByReviewToken, listSuggestions } from "@/lib/repo";
 
-const AGO = (iso: string) => {
-  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
-  return `${Math.round(mins / 1440)}d ago`;
+export const dynamic = "force-dynamic";
+
+/* The token is the credential: keep the page out of search engines and keep
+   the URL out of the Referer header of anything it links to. */
+export const metadata: Metadata = {
+  title: "Designer review — Cadastra",
+  robots: { index: false, follow: false },
+  referrer: "no-referrer",
 };
 
-export default function ReviewPage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = use(params);
-  const design = findByToken(token);
-
-  const [author, setAuthor] = useState("");
-  const [body, setBody] = useState("");
-  const [sent, setSent] = useState(false);
-  const thread = useSuggestions(design?.id);
+export default async function ReviewPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const design = await getWorkByReviewToken(token);
 
   if (!design) {
     return (
@@ -49,13 +51,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
     );
   }
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!body.trim()) return;
-    addSuggestion(design.id, author, body);
-    setBody("");
-    setSent(true);
-  };
+  const [thread, rate] = await Promise.all([listSuggestions(design.id), getXtzUsd()]);
 
   return (
     <>
@@ -114,8 +110,8 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
               <div className="factgrid">
                 <div>
                   <span className="label">List price</span>
-                  <b>{design.priceEth.toFixed(2)} ETH</b>
-                  <small>{usd(design.priceEth)}</small>
+                  <b>{formatTez(design.priceMutez)}</b>
+                  <small>{usdFromMutez(design.priceMutez, rate.usdPerTez)}</small>
                 </div>
                 <div>
                   <span className="label">Likes</span>
@@ -142,36 +138,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
                 <span className="label">Suggest an improvement</span>
               </div>
               <div className="panel-body">
-                {sent && (
-                  <p className="ok">
-                    Thank you — your suggestion is now with the account team. You can add another
-                    below.
-                  </p>
-                )}
-                <form onSubmit={submit}>
-                  <div className="field">
-                    <label htmlFor="author">Your name or studio</label>
-                    <input
-                      id="author"
-                      value={author}
-                      onChange={(e) => setAuthor(e.target.value)}
-                      placeholder={design.studio}
-                    />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="body">What would you change, and why?</label>
-                    <textarea
-                      id="body"
-                      value={body}
-                      rows={6}
-                      onChange={(e) => setBody(e.target.value)}
-                      placeholder="Be specific about the change and its effect — the team acts on these directly."
-                    />
-                  </div>
-                  <button type="submit" className="btn btn-primary btn-block" disabled={!body.trim()}>
-                    Send suggestion
-                  </button>
-                </form>
+                <SuggestionForm reviewToken={design.reviewToken} studio={design.studio} />
               </div>
             </div>
 
@@ -207,7 +174,7 @@ export default function ReviewPage({ params }: { params: Promise<{ token: string
 
       <footer className="site">
         <div className="shell in">
-          <span>© 2026 Terra Ledger — NFT Market</span>
+          <span>© 2026 Terra Ledger</span>
           <span>This link is scoped to one asset. It grants no access to the marketplace.</span>
         </div>
       </footer>

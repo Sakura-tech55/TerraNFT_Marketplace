@@ -3,7 +3,8 @@
 /* YELLOW — clients holding the most assets. Sales view only. */
 
 import { useState } from "react";
-import { TOP_BUYERS } from "@/lib/data";
+import { formatTez } from "@/lib/currency";
+import type { BuyerView } from "@/lib/repo";
 
 const W = 520;
 const H = 206;
@@ -13,16 +14,24 @@ const T = 24;
 const B = 40;
 const YELLOW = "var(--sig-yellow)";
 
-export function BuyersChart() {
-  const data = TOP_BUYERS;
+function niceMax(v: number) {
+  if (v <= 0) return 1;
+  const pow = 10 ** Math.floor(Math.log10(v));
+  const n = v / pow;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
+}
+
+export function BuyersChart({ data }: { data: BuyerView[] }) {
   const [hover, setHover] = useState<number | null>(null);
   const active = hover ?? 0;
   const d0 = data[active];
 
-  const yMax = 160;
+  const yMax = niceMax(Math.max(...data.map((d) => d.purchases)));
+  const ticks = [0, yMax / 2, yMax];
   const band = (W - L - R) / data.length;
   const bw = band * 0.52;
   const py = (v: number) => H - B - (v / yMax) * (H - B - T);
+  const totalVolume = data.reduce((s, d) => s + d.volumeMutez, 0);
 
   return (
     <>
@@ -31,21 +40,21 @@ export function BuyersChart() {
           {d0.purchases} assets
         </p>
         <p className="label" style={{ letterSpacing: ".1em" }}>
-          {d0.handle} · {d0.region} · {d0.volumeEth.toFixed(1)} ETH lifetime
+          {d0.handle} · {d0.region} · {formatTez(d0.volumeMutez)} lifetime
         </p>
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="chartsvg"
         role="img"
-        aria-label="The six highest-volume buyers. lumen.eth leads with 148 assets."
+        aria-label={`The ${data.length} highest-volume buyers. ${data[0].handle} leads with ${data[0].purchases} assets.`}
         onMouseLeave={() => setHover(null)}
       >
-        {[0, 40, 80, 120, 160].map((v) => (
+        {ticks.map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={py(v)} y2={py(v)} stroke="var(--line)" strokeWidth="1" />
             <text x={L - 8} y={py(v) + 3.5} fontSize="9.5" fill="var(--ink-4)" textAnchor="end">
-              {v}
+              {Math.round(v)}
             </text>
           </g>
         ))}
@@ -55,20 +64,9 @@ export function BuyersChart() {
           const y = py(d.purchases);
           const on = i === active;
           return (
-            <g
-              key={d.handle}
-              onMouseEnter={() => setHover(i)}
-              style={{ cursor: "pointer" }}
-            >
+            <g key={d.handle} onMouseEnter={() => setHover(i)} style={{ cursor: "pointer" }}>
               <rect x={L + band * i} y={T - 10} width={band} height={H - B - T + 14} fill="transparent" />
-              <rect
-                x={x}
-                y={y}
-                width={bw}
-                height={H - B - y}
-                fill={YELLOW}
-                opacity={on ? 1 : 0.52}
-              />
+              <rect x={x} y={y} width={bw} height={H - B - y} fill={YELLOW} opacity={on ? 1 : 0.52} />
               <text
                 x={x + bw / 2}
                 y={y - 7}
@@ -95,7 +93,7 @@ export function BuyersChart() {
         </text>
       </svg>
       <p className="chart-note">
-        The six highest-volume accounts, together 31.4% of today&rsquo;s traded volume.
+        The {data.length} highest-volume accounts, {formatTez(totalVolume)} between them since joining.
       </p>
     </>
   );

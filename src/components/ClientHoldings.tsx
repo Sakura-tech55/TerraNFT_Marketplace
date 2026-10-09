@@ -4,20 +4,21 @@
    demo shows a realistic, stable position per account. */
 
 import Image from "next/image";
-import { DESIGNS, usd } from "@/lib/data";
+import { formatTez, usdFromMutez } from "@/lib/currency";
+import type { WorkView } from "@/lib/repo";
 import { assetSrc } from "@/lib/media";
 import { rngFrom } from "@/lib/hash";
 
-export function ClientHoldings({ seed }: { seed: number }) {
+export function ClientHoldings({ seed, works, usdRate }: { seed: number; works: WorkView[]; usdRate: number }) {
   const rnd = rngFrom(seed);
-  const live = DESIGNS.filter((d) => d.status === "Live");
+  const live = works.filter((d) => d.status === "Live");
   const holdings = live
     .map((d) => ({ d, r: rnd() }))
     .sort((a, b) => a.r - b.r)
     .slice(0, 5)
     .map(({ d }, i) => ({ design: d, units: 1 + Math.floor(rngFrom(seed + i)() * 4) }));
 
-  const value = holdings.reduce((s, h) => s + h.design.priceEth * h.units, 0);
+  const value = holdings.reduce((s, h) => s + h.design.priceMutez * h.units, 0);
 
   return (
     <>
@@ -28,9 +29,9 @@ export function ClientHoldings({ seed }: { seed: number }) {
         <span className="label">{holdings.length} positions</span>
       </div>
       <div className="panel-body" style={{ paddingBottom: 6 }}>
-        <p className="chart-figure">{value.toFixed(2)} ETH</p>
+        <p className="chart-figure">{formatTez(value)}</p>
         <p className="label" style={{ letterSpacing: ".1em" }}>
-          Portfolio value · {usd(value)}
+          Portfolio value · {usdFromMutez(value, usdRate)}
         </p>
       </div>
       <table className="rank">
@@ -56,7 +57,7 @@ export function ClientHoldings({ seed }: { seed: number }) {
                 </span>
               </td>
               <td className="n">{h.units}</td>
-              <td className="n">{(h.design.priceEth * h.units).toFixed(2)} ETH</td>
+              <td className="n">{formatTez(h.design.priceMutez * h.units)}</td>
             </tr>
           ))}
         </tbody>

@@ -2,23 +2,30 @@
 
 /* Designs registered in the system, by category */
 
-import { CATEGORY_STATS } from "@/lib/data";
+import { formatTez } from "@/lib/currency";
+import type { CategoryView } from "@/lib/repo";
 
-export function CategoryBars() {
-  const max = Math.max(...CATEGORY_STATS.map((c) => c.designs));
-  const total = CATEGORY_STATS.reduce((s, c) => s + c.designs, 0);
+export function CategoryBars({ data }: { data: CategoryView[] }) {
+  const max = Math.max(...data.map((c) => c.designs));
+  const total = data.reduce((s, c) => s + c.designs, 0);
+  const totalVolume = data.reduce((s, c) => s + c.volumeMutez, 0);
+
+  /* Highest-earning category, worked out from the data rather than written by hand. */
+  const top = data.reduce((b, c) => (c.volumeMutez > b.volumeMutez ? c : b), data[0]);
+  const topShare = totalVolume ? (top.volumeMutez / totalVolume) * 100 : 0;
+
   return (
     <>
       <div className="panel-body" style={{ paddingBottom: 4 }}>
         <p className="chart-figure">{total.toLocaleString("en-US")}</p>
         <p className="label" style={{ letterSpacing: ".1em" }}>
-          Registered designs · four categories
+          Registered designs · {data.length} categories · {formatTez(totalVolume)} lifetime
         </p>
       </div>
       <div className="panel-body" style={{ paddingTop: 8 }}>
-        {CATEGORY_STATS.map((c) => (
-          <div className="catbar" key={c.category}>
-            <span className="catbar-name">{c.category}</span>
+        {data.map((c) => (
+          <div className="catbar" key={c.slug}>
+            <span className="catbar-name">{c.name}</span>
             <span className="catbar-track">
               <span className="catbar-fill" style={{ width: `calc(${(c.designs / max) * 100}% - 2px)` }} />
             </span>
@@ -27,7 +34,8 @@ export function CategoryBars() {
         ))}
       </div>
       <p className="chart-note">
-        Real estate is one asset per property, so the count is low — but it is 39.6% of lifetime volume.
+        {top.name} carries {topShare.toFixed(1)}% of lifetime volume from{" "}
+        {((top.designs / total) * 100).toFixed(1)}% of the assets.
       </p>
     </>
   );

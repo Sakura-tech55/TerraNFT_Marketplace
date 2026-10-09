@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   Ledger Pass — artwork generated deterministically from the
+   Cadastra Pass — artwork generated deterministically from the
    account email. The same address always produces the same
    image, so the artwork itself identifies the account.
    ============================================================ */
@@ -140,5 +140,5 @@ export function PassCanvas({ seed, active = true }: { seed: number; active?: boo
     };
   }, [seed, active]);
 
-  return <canvas ref={ref} aria-label="Generated Ledger Pass artwork" role="img" />;
+  return <canvas ref={ref} aria-label="Generated Cadastra Pass artwork" role="img" />;
 }

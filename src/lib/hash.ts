@@ -23,7 +23,7 @@ export function rngFrom(seed: number) {
 /* Display identifier for a pass */
 export function passIdFrom(seed: number): string {
   const hex = seed.toString(16).toUpperCase().padStart(8, "0");
-  return `LP-${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
+  return `CP-${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
 }
 
 /* Fictional wallet address, for display only */
