@@ -5,6 +5,7 @@
   "scripts": {
     "predev": "node scripts/setup.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/setup.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,8 +15,7 @@
     "catalog:import": "node scripts/catalog-import.mjs",
     "creators:photos": "node scripts/creator-photos.mjs",
     "catalog:fetch": "node scripts/catalog-fetch.mjs",
-    "setup": "node scripts/setup.mjs",
-    "build:production": "node scripts/setup.mjs && next build"
+    "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

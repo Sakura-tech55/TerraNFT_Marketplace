@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/media/[id]": ["./private/nft/**/*"],
     "/api/media/creator/[slug]": ["./private/creators/**/*"],
+    "/api/health": ["./private/nft/catalog.csv"],
   },
 };
 

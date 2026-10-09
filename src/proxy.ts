@@ -11,6 +11,7 @@
      /tezos            how to get a wallet, needed before you can register
      /review/<token>   designers, who have no account; the token is the credential
      /api/auth/*       the sign-in handshake
+     /api/health       deployment check: yes/no facts only
      /api/media/*      decides per request (visitors get watermarked previews
                        of listed works only, for the landing page) */
 
@@ -18,7 +19,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 const PUBLIC_EXACT = new Set(["/", "/login", "/register", "/tezos"]);
-const PUBLIC_PREFIX = ["/review/", "/api/auth/", "/api/media/"];
+const PUBLIC_PREFIX = ["/review/", "/api/auth/", "/api/media/", "/api/health"];
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIX.some((p) => pathname.startsWith(p));
