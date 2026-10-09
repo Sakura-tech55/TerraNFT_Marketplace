@@ -33,6 +33,8 @@ async function get(url, as = "buffer") {
       const r = await fetch(url, { headers: { "user-agent": "TerraLedger-catalog/1.0" }, signal: AbortSignal.timeout(90_000) });
       if (r.ok) return as === "json" ? r.json() : as === "text" ? r.text() : Buffer.from(await r.arrayBuffer());
       if (r.status === 404) return null;
+      /* 403 / 429: the museum's bot protection — wait it out rather than skip the work */
+      if (r.status === 403 || r.status === 429) { await sleep(4000 * (i + 1)); continue; }
     } catch {
       /* retry */
     }
@@ -92,10 +94,21 @@ console.log(`site: ${rows.length} works (1 ꜩ = $${rate})`);
 
 /* ---------- The Met Open Access ---------- */
 const GENERIC = /^(helmet|sword|shield|armor|armour|dagger|dagger \(.*\)|close helmet)$/i;
-let metCount = 0;
-for (const m of src.met) {
-  const o = await get(`${MET}/${m.id}`, "json");
-  if (!o?.isPublicDomain) { failed.push(`met ${m.id} (not public domain or unavailable)`); continue; }
+/* Each work's museum record is kept in catalog-sources.json, so a first run only downloads
+   images: The Met's API blocks bursts of requests (HTTP 403). Entries without a record
+   fall back to the API. */
+async function metRecord(m) {
+  if (m.meta) {
+    const x = m.meta;
+    return { isPublicDomain: true, title: x.title, artistDisplayName: x.artist, culture: x.culture, objectDate: x.date,
+      medium: x.medium, creditLine: x.creditLine, objectURL: x.url, primaryImage: x.image, primaryImageSmall: x.imageSmall };
+  }
+  return get(`${MET}/${m.id}`, "json");
+}
+
+async function metRow(m) {
+  const o = await metRecord(m);
+  if (!o?.isPublicDomain) { failed.push(`met ${m.id} (not public domain or unavailable)`); return null; }
 
   let title = String(o.title).replace(/^\[|\]$/g, "").split(/, from the (?:series|album|book)/i)[0].trim();
   if (title.length > 70) title = title.split(" (")[0];
@@ -107,10 +120,10 @@ for (const m of src.met) {
     const big = o.primaryImage ? await get(o.primaryImage) : null;
     return toJpeg(big ?? (await get(o.primaryImageSmall)));
   });
-  if (!ok) { failed.push(`met ${m.id} (image)`); continue; }
+  if (!ok) { failed.push(`met ${m.id} (image)`); return null; }
 
   const what = [o.medium, o.objectDate].filter(Boolean).join(", ");
-  rows.push({
+  return {
     code: "", title, creator: maker, studio: "Public domain · The Met",
     category: m.category, subcategory: m.subcategory, price_tez: m.price_tez, editions: m.editions, placed: "",
     status: "Live", file: rel, licence: "CC0", source_url: o.objectURL,
@@ -118,10 +131,22 @@ for (const m of src.met) {
     attribution: "The Metropolitan Museum of Art, Open Access. Public domain; image released under CC0.",
     description: `${o.title}${o.artistDisplayName ? ` by ${o.artistDisplayName}` : ""}${what ? ` — ${what}` : ""}. A public-domain work from The Met collection${o.creditLine ? ` (${o.creditLine})` : ""}.`,
     released: "",
-  });
-  metCount++;
-  await sleep(150);
+  };
 }
+
+/* three at a time: quick, and gentle enough on the museum's servers; order is kept */
+const metRows = new Array(src.met.length).fill(null);
+let next = 0, done = 0;
+await Promise.all(Array.from({ length: 3 }, async () => {
+  while (next < src.met.length) {
+    const i = next++;
+    metRows[i] = await metRow(src.met[i]);
+    if (++done % 15 === 0) console.log(`  museum works: ${done} / ${src.met.length}`);
+    await sleep(150);
+  }
+}));
+const metCount = metRows.filter(Boolean).length;
+rows.push(...metRows.filter(Boolean));
 console.log(`met: ${metCount} works`);
 
 /* ---------- Terra Ledger Studio ---------- */

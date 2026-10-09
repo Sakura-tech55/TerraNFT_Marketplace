@@ -63,28 +63,23 @@ queries after any import to refresh them.
 
 ## Running the project
 
+### 1. Set up Node.js
+
 ```bash
-nvm use                       # 1. Node 24 (see .nvmrc)
-npm install                   # 2. dependencies
-cp .env.example .env.local    # 3. set SESSION_SECRET (openssl rand -base64 32)
-npm run db:setup              # 4. create or upgrade the database — safe to repeat
-npm run catalog:fetch         # 5. download and render the catalogue's images into private/nft/
-npm run db:seed               # 6. demo data: dashboard figures, drops, partners, artists
-npm run catalog:import        # 7. load the 118 catalogue works
-npm run creators:photos       # 8. attach artist photos (needs private/creators/, see below)
-npm run dev                   # 9. http://localhost:3000 — create an account to see every page
+nvm install
 ```
 
-- **Production:** `npm run build && npm start`, with `SESSION_SECRET` set (without it the server
-  issues no sessions) and, optionally, `DATABASE_URL` for a managed PostgreSQL.
-- **Checks:** `npm test` (sessions, passwords, route gate, rate limit, CSV, watermark),
-  `npx tsc --noEmit`, `npm run lint`.
-- **No database to install.** With `DATABASE_URL` unset the app uses PGlite in `.data/pglite`.
-  PGlite allows one process at a time: stop the dev server before `db:seed` or an import.
-- **To make an account staff:** `UPDATE users SET role = 'sales' WHERE email = '…'`.
+### 2. Install packages
 
-`private/` (artwork, artist photos) and `.data/` (database, image cache) are git-ignored and must
-never be committed. Artist photos are supplied by the team, not downloaded.
+```bash
+npm install
+```
+
+### 3. Run locally
+
+```bash
+npm run dev
+```
 
 ## Purpose and mission
 
