@@ -42,6 +42,8 @@ export async function GET() {
         : /password|authentication|SSL|ENOTFOUND|ECONNREFUSED|timeout/i.test(msg)
           ? "Cannot reach the database: check DATABASE_URL"
           : "Database error (see the deployment's runtime logs)";
+    /* the demo database has no address or password, so its message is safe to show */
+    if (checks.databaseMode === "temporary") checks.databaseErrorDetail = msg.trim().slice(0, 300);
   }
 
   const ok = checks.sessionSecret !== "missing" && checks.databaseConnected === true

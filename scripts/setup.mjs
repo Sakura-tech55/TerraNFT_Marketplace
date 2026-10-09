@@ -31,7 +31,7 @@ if (major < 22 || (major === 22 && minor < 18)) {
 /* On a serverless host (Vercel) the build prepares everything the site needs:
      - DATABASE_URL set: the hosted PostgreSQL, which keeps accounts;
      - DATABASE_URL unset: a fresh demo database in .data/deploy-db that ships with the
-       site — each server starts from a copy of it, so accounts are temporary;
+       site as one archive — each server loads it into memory, so accounts are temporary;
      - SESSION_SECRET unset: a random secret for this deployment in .data/deploy-secret,
        built into the server code by next.config.ts. Never committed. */
 if (process.env.VERCEL) {
@@ -107,6 +107,17 @@ if (c.catalogue === 0 && existsSync(csv)) {
 if (c.photos === 0 && existsSync(path.join(ROOT, "private", "creators", "credits.json"))) {
   say("Attaching artist photos…");
   run("creator-photos.mjs", [], { optional: true });
+}
+
+/* 7. on a serverless host without DATABASE_URL: ship the demo database as one archive */
+if (process.env.VERCEL && process.env.PGLITE_DIR) {
+  const { PGlite } = await import("@electric-sql/pglite");
+  const db = new PGlite(process.env.PGLITE_DIR);
+  await db.waitReady;
+  const archive = await db.dumpDataDir("gzip");
+  await db.close();
+  writeFileSync(path.join(ROOT, ".data", "deploy-db.tar.gz"), new Uint8Array(await archive.arrayBuffer()));
+  say(`Packed the demo database (${Math.round(archive.size / 1024 / 1024)} MB) to ship with the site.`);
 }
 
 say("Ready.");

@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
   /* Files read at run time must ship with the server code on serverless hosts:
      originals for the image routes, and the demo database the build prepared. */
   outputFileTracingIncludes: {
-    "/**": ["./.data/deploy-db/**/*"],
+    "/**": ["./.data/deploy-db.tar.gz"],
     "/api/media/[id]": ["./private/nft/**/*"],
     "/api/media/creator/[slug]": ["./private/creators/**/*"],
     "/api/health": ["./private/nft/catalog.csv"],
