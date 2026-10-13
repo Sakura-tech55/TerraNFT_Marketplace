@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { formatTez } from "@/lib/currency";
 import type { BuyerView } from "@/lib/repo";
+import { EmptyChart } from "./EmptyChart";
 
 const W = 520;
 const H = 206;
@@ -21,7 +22,7 @@ function niceMax(v: number) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
 }
 
-export function BuyersChart({ data }: { data: BuyerView[] }) {
+function BuyersChartView({ data }: { data: BuyerView[] }) {
   const [hover, setHover] = useState<number | null>(null);
   const active = hover ?? 0;
   const d0 = data[active];
@@ -97,4 +98,10 @@ export function BuyersChart({ data }: { data: BuyerView[] }) {
       </p>
     </>
   );
+}
+
+/* Nothing to plot yet (e.g. before real trading starts): say so instead of failing. */
+export function BuyersChart(props: { data: BuyerView[] }) {
+  if (!props.data.length) return <EmptyChart text="No buyers to rank yet." />;
+  return <BuyersChartView {...props} />;
 }

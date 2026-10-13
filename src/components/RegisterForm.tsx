@@ -10,12 +10,17 @@ import { useRouter } from "next/navigation";
 import { AuthArtPanel } from "@/components/AuthArtPanel";
 import { useAccount } from "@/lib/account";
 import { safeNext } from "@/lib/redirect";
+import { useToast } from "@/components/Toaster";
+
+/* the sign-in page fills the email in from here */
+export const PREFILL_KEY = "cadastra.prefill-email";
 
 const MIN = 8;
 
 export function RegisterForm({ next }: { next: string | null }) {
   const router = useRouter();
   const { account, busy, register } = useAccount();
+  const toast = useToast();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,8 +41,17 @@ export function RegisterForm({ next }: { next: string | null }) {
       setError(r.error);
       return;
     }
-    router.push(safeNext(next));
-    router.refresh();
+    /* registering does not sign in: congratulate, then go to the sign-in page */
+    try {
+      sessionStorage.setItem(PREFILL_KEY, email.trim().toLowerCase());
+    } catch {
+      /* storage blocked: the member types the email again */
+    }
+    toast.show({
+      title: `Congratulations, ${r.name}!`,
+      body: "Your Cadastra account is ready. Sign in to open the market.",
+    });
+    router.push(`/login?registered=1${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   };
 
   return (

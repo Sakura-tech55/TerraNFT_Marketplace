@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { formatTez, formatTezShort, usdFromMutez } from "@/lib/currency";
 import type { SalePoint } from "@/lib/repo";
+import { EmptyChart } from "./EmptyChart";
 
 const W = 520;
 const H = 206;
@@ -22,7 +23,7 @@ function niceMax(v: number) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
 }
 
-export function PriceChart({ data, usdRate }: { data: SalePoint[]; usdRate: number }) {
+function PriceChartView({ data, usdRate }: { data: SalePoint[]; usdRate: number }) {
   const peakIdx = data.reduce((b, d, i) => (d.mutez > data[b].mutez ? i : b), 0);
   const [hover, setHover] = useState<number | null>(null);
   const active = hover ?? peakIdx;
@@ -31,7 +32,7 @@ export function PriceChart({ data, usdRate }: { data: SalePoint[]; usdRate: numb
 
   const yMax = niceMax(Math.max(...data.map((d) => d.mutez)));
   const ticks = [0, yMax / 2, yMax];
-  const px = (i: number) => L + (i / (data.length - 1)) * (W - L - R);
+  const px = (i: number) => L + (data.length > 1 ? i / (data.length - 1) : 0.5) * (W - L - R);
   const py = (v: number) => H - B - (v / yMax) * (H - B - T);
 
   const line = data.map((d, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(d.mutez).toFixed(1)}`).join(" ");
@@ -115,4 +116,10 @@ export function PriceChart({ data, usdRate }: { data: SalePoint[]; usdRate: numb
       </p>
     </>
   );
+}
+
+/* Nothing to plot yet (e.g. before real trading starts): say so instead of failing. */
+export function PriceChart(props: { data: SalePoint[]; usdRate: number }) {
+  if (!props.data.length) return <EmptyChart text="No sales recorded today yet." />;
+  return <PriceChartView {...props} />;
 }

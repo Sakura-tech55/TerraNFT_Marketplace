@@ -57,6 +57,9 @@ const toJpeg = (input) =>
   sharp(input).rotate().resize({ width: MAX, height: MAX, fit: "inside", withoutEnlargement: true })
     .flatten({ background: "#0c0c14" }).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
 
+/* a download that failed after its retries is skipped and reported, not fatal */
+const toJpegOrNull = (input) => (input ? toJpeg(input) : null);
+
 /* an icon on a square stage, so a small vector reads as a full artwork */
 async function iconArtwork(svg) {
   const icon = await sharp(Buffer.from(svg), { density: 1200 }).resize(1180, 1180).png().toBuffer();
@@ -81,9 +84,9 @@ const rate = await usdPerTez();
 for (const s of src.site) {
   const rel = `site/${slugify(s.title)}.jpg`;
   const ok = await save(rel, async () => {
-    if (s.image.unsplash) return toJpeg(await get(`https://images.unsplash.com/photo-${s.image.unsplash}?fm=jpg&w=${MAX}&q=88`));
+    if (s.image.unsplash) return toJpegOrNull(await get(`https://images.unsplash.com/photo-${s.image.unsplash}?fm=jpg&w=${MAX}&q=88`));
     if (s.image.svg) return iconArtwork(await get(s.image.svg, "text"));
-    if (s.image.png) return toJpeg(await get(s.image.png));
+    if (s.image.png) return toJpegOrNull(await get(s.image.png));
     return null;
   });
   if (!ok) { failed.push(s.title); continue; }
@@ -118,7 +121,7 @@ async function metRow(m) {
   const rel = `open-access/met-${m.id}.jpg`;
   const ok = await save(rel, async () => {
     const big = o.primaryImage ? await get(o.primaryImage) : null;
-    return toJpeg(big ?? (await get(o.primaryImageSmall)));
+    return toJpegOrNull(big ?? (await get(o.primaryImageSmall)));
   });
   if (!ok) { failed.push(`met ${m.id} (image)`); return null; }
 

@@ -55,7 +55,11 @@ export default async function DropsPage() {
   const [drops, partners] = await Promise.all([listDrops(), listPartners()]);
 
   const live = drops.find((d) => d.status === "Live");
-  const upcoming = drops.filter((d) => d.status === "Upcoming").sort((a, b) => a.date.localeCompare(b.date));
+  /* an "Upcoming" drop whose date has passed is stale data, not news */
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = drops
+    .filter((d) => d.status === "Upcoming" && d.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
   const past = drops.filter((d) => d.status === "Sold out").sort((a, b) => b.date.localeCompare(a.date));
 
   return (

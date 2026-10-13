@@ -6,7 +6,7 @@
    checks this cookie before handing out artwork.
    ============================================================ */
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const SESSION_COOKIE = "tl.session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 7; /* 7 days */
@@ -37,6 +37,9 @@ function secret(): string {
 export type SessionPayload = {
   /** Id of the signed-in account (users.id). */
   sub: string;
+  /** Its email. Ids are only unique within one database; the email is checked too, so a
+      session can never resolve to someone else's account. */
+  em: string;
   /** Issued at, in milliseconds — compared with users.sessions_valid_after. */
   iat: number;
   exp: number;
@@ -46,8 +49,10 @@ const b64 = (s: string) => Buffer.from(s, "utf8").toString("base64url");
 const unb64 = (s: string) => Buffer.from(s, "base64url").toString("utf8");
 const sign = (body: string) => createHmac("sha256", secret()).update(body).digest("base64url");
 
-export function createSessionToken(payload: { sub: string }, now = Date.now()): string {
-  const full: SessionPayload = { sub: payload.sub, iat: now, exp: Math.floor(now / 1000) + SESSION_MAX_AGE };
+export function createSessionToken(payload: { sub: string; em: string }, now = Date.now()): string {
+  const full: SessionPayload = {
+    sub: payload.sub, em: payload.em.toLowerCase(), iat: now, exp: Math.floor(now / 1000) + SESSION_MAX_AGE,
+  };
   const body = b64(JSON.stringify(full));
   return `${body}.${sign(body)}`;
 }
@@ -70,7 +75,7 @@ export function verifySessionToken(token: string | undefined): SessionPayload | 
   try {
     const payload = JSON.parse(unb64(body)) as SessionPayload;
     if (!payload?.exp || payload.exp * 1000 < Date.now()) return null;
-    if (typeof payload.iat !== "number" || !payload.sub) return null;
+    if (typeof payload.iat !== "number" || !payload.sub || typeof payload.em !== "string" || !payload.em) return null;
     return payload;
   } catch {
     return null;
@@ -84,4 +89,50 @@ export const sessionCookie = {
   secure: process.env.NODE_ENV === "production",
   path: "/",
   maxAge: SESSION_MAX_AGE,
+};
+
+/* ---------- the account copy (temporary-database mode only) ----------
+   Without DATABASE_URL, every Vercel server holds its own in-memory database, so an
+   account created on one is unknown to the others. The browser therefore keeps an
+   encrypted copy of its own account (AES-256-GCM, key derived from the session secret);
+   any server can read it and restore the account. With a real database this is unused. */
+
+export const ACCOUNT_COOKIE = "tl.account";
+export const ACCOUNT_MAX_AGE = 60 * 60 * 24 * 30; /* 30 days */
+
+export type AccountCopy = {
+  email: string;
+  passwordHash: string;
+  displayName: string | null;
+  termsVersion: string;
+};
+
+const accountKey = () => createHash("sha256").update(`${secret()}:account-copy`).digest();
+
+export function sealAccount(copy: AccountCopy): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", accountKey(), iv);
+  const data = Buffer.concat([cipher.update(JSON.stringify(copy), "utf8"), cipher.final()]);
+  return [iv, cipher.getAuthTag(), data].map((b) => b.toString("base64url")).join(".");
+}
+
+export function openAccount(token: string | undefined): AccountCopy | null {
+  if (!token) return null;
+  try {
+    const [iv, tag, data] = token.split(".").map((p) => Buffer.from(p, "base64url"));
+    const decipher = createDecipheriv("aes-256-gcm", accountKey(), iv);
+    decipher.setAuthTag(tag);
+    const copy = JSON.parse(Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8")) as AccountCopy;
+    return copy?.email && copy?.passwordHash ? copy : null;
+  } catch {
+    return null; /* tampered, or sealed with another deployment's secret */
+  }
+}
+
+export const accountCookie = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: ACCOUNT_MAX_AGE,
 };

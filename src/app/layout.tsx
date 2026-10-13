@@ -3,6 +3,7 @@ import { Unbounded, Manrope, JetBrains_Mono } from "next/font/google";
 import { AccountProvider } from "@/lib/account";
 import { getViewer } from "@/lib/viewer";
 import { PriceStrip } from "@/components/PriceStrip";
+import { ToastProvider } from "@/components/Toaster";
 import "./globals.css";
 import "./site.css";
 
@@ -41,14 +42,18 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   /* Resolve the session here so the header renders signed-in on first paint. */
-  const account = await getViewer();
+  /* if the database is unreachable, render signed-out: the pages that need data show
+     the error page, which points to /api/health */
+  const account = await getViewer().catch(() => null);
 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body>
         <AccountProvider initialAccount={account}>
-          <PriceStrip />
-          {children}
+          <ToastProvider>
+            <PriceStrip />
+            {children}
+          </ToastProvider>
         </AccountProvider>
       </body>
     </html>

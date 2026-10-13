@@ -96,6 +96,7 @@ function AccountMenu() {
           </p>
           <Link className="wallet-item" href="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link>
           <Link className="wallet-item" href="/explore" onClick={() => setOpen(false)}>Explore the market</Link>
+          <Link className="wallet-item" href="/drops" onClick={() => setOpen(false)}>Drops</Link>
           <Link className="wallet-item" href="/creators" onClick={() => setOpen(false)}>Artists</Link>
           <button
             className="wallet-item wallet-danger"

@@ -19,6 +19,9 @@ type Db = Awaited<ReturnType<typeof create>>;
 /* Vercel's Postgres integrations set POSTGRES_URL; anything else uses DATABASE_URL. */
 export const databaseUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
 
+/** True on a serverless host without DATABASE_URL: each server has its own in-memory copy. */
+export const isTemporaryDatabase = () => !databaseUrl() && Boolean(process.env.VERCEL);
+
 async function create() {
   const url = databaseUrl();
 

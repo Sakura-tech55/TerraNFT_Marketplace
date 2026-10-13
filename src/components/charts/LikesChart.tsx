@@ -5,16 +5,17 @@
 import { useState } from "react";
 import { formatTez } from "@/lib/currency";
 import type { LikedView } from "@/lib/repo";
+import { EmptyChart } from "./EmptyChart";
 
 const GREEN = "var(--sig-green)";
 const FAIR_BAND = 5; /* percent from the estimate that still counts as "fairly priced" */
 
-export function LikesChart({ data }: { data: LikedView[] }) {
-  const max = Math.max(...data.map((d) => d.likes));
+function LikesChartView({ data }: { data: LikedView[] }) {
+  const max = Math.max(1, ...data.map((d) => d.likes));
   const [hover, setHover] = useState<number | null>(null);
   const active = hover ?? 0;
   const d0 = data[active];
-  const gapOf = (d: LikedView) => ((d.fairMutez - d.priceMutez) / d.fairMutez) * 100;
+  const gapOf = (d: LikedView) => (d.fairMutez > 0 ? ((d.fairMutez - d.priceMutez) / d.fairMutez) * 100 : 0);
   const gap = gapOf(d0);
   const withinBand = data.filter((d) => Math.abs(gapOf(d)) <= FAIR_BAND).length;
 
@@ -91,4 +92,10 @@ export function LikesChart({ data }: { data: LikedView[] }) {
       </p>
     </>
   );
+}
+
+/* Nothing to plot yet (e.g. before real trading starts): say so instead of failing. */
+export function LikesChart(props: { data: LikedView[] }) {
+  if (!props.data.length) return <EmptyChart text="No listed work carries a fair-value estimate yet." />;
+  return <LikesChartView {...props} />;
 }

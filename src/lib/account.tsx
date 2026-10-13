@@ -23,7 +23,7 @@ export type Account = {
   createdAt: string;
 };
 
-type Result = { ok: true } | { ok: false; error: string };
+type Result = { ok: true; name: string } | { ok: false; error: string };
 
 type Ctx = {
   account: Account | null;
@@ -37,7 +37,7 @@ type Ctx = {
 
 const AccountCtx = createContext<Ctx | null>(null);
 
-async function post(url: string, body: unknown): Promise<{ ok: boolean; error?: string; user?: Account }> {
+async function post(url: string, body: unknown): Promise<{ ok: boolean; error?: string; user?: Account; email?: string; displayName?: string | null }> {
   try {
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     return await res.json();
@@ -56,20 +56,30 @@ export function AccountProvider({
   const [account, setAccount] = useState<Account | null>(initialAccount);
   const [busy, setBusy] = useState(false);
 
-  const run = useCallback(async (url: string, body: unknown): Promise<Result> => {
+  /* Signing in opens a session; registering only creates the account — the new
+     member signs in next, on the sign-in page. */
+  const signIn = useCallback<Ctx["signIn"]>(async (email, password) => {
     setBusy(true);
     try {
-      const json = await post(url, body);
+      const json = await post("/api/auth/login", { email, password });
       if (!json.ok || !json.user) return { ok: false, error: json.error ?? "Something went wrong. Try again." };
       setAccount(json.user);
-      return { ok: true };
+      return { ok: true, name: json.user.displayName || json.user.email.split("@")[0] };
     } finally {
       setBusy(false);
     }
   }, []);
 
-  const signIn = useCallback<Ctx["signIn"]>((email, password) => run("/api/auth/login", { email, password }), [run]);
-  const register = useCallback<Ctx["register"]>((data) => run("/api/auth/register", data), [run]);
+  const register = useCallback<Ctx["register"]>(async (data) => {
+    setBusy(true);
+    try {
+      const json = await post("/api/auth/register", data);
+      if (!json.ok) return { ok: false, error: json.error ?? "Something went wrong. Try again." };
+      return { ok: true, name: json.displayName || (json.email ?? data.email).split("@")[0] };
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});

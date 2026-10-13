@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const isSales = viewer.role === "sales";
 
   const [hourly, liked, categories, works, rate, sales] = await Promise.all([
-    listHourlyHighs(),
+    listHourlyHighs({ includeUnlisted: isSales }),
     listFairlyPriced(),
     listCategories(),
     listWorks({ status: isSales ? undefined : "Live" }),

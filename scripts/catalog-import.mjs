@@ -155,7 +155,7 @@ for (const row of rows) {
   plan.push({
     code, title, creator, studio: row.studio || creator, catId: cat?.id, subId: sub?.id ?? null,
     priceMutez: Math.round(priceTez * MUTEZ), editions, status, royaltyBps: Math.round(royaltyPct * 100),
-    licenceId: licence?.id, released, mediaKey: `nft/${rel}`, description: row.description || null,
+    licenceId: licence?.id, released, releasedGiven: Boolean(row.released), mediaKey: `nft/${rel}`, description: row.description || null,
     placed, sourceUrl, attribution: row.attribution || null,
     isNew: !existingCodes.has(code),
   });
@@ -191,14 +191,16 @@ try {
          title = EXCLUDED.title, creator_name = EXCLUDED.creator_name, studio = EXCLUDED.studio,
          category_id = EXCLUDED.category_id, subcategory_id = EXCLUDED.subcategory_id,
          status = EXCLUDED.status, price_amount_minor = EXCLUDED.price_amount_minor,
-         editions = EXCLUDED.editions, minted_at = EXCLUDED.minted_at,
+         editions = EXCLUDED.editions,
+         minted_at = CASE WHEN $20::boolean THEN EXCLUDED.minted_at ELSE COALESCE(works.minted_at, EXCLUDED.minted_at) END,
          description = EXCLUDED.description, media_key = EXCLUDED.media_key,
          licence_id = EXCLUDED.licence_id, royalty_bps = EXCLUDED.royalty_bps,
          source_url = EXCLUDED.source_url, attribution = EXCLUDED.attribution,
          owners = CASE WHEN $19::int IS NULL THEN works.owners ELSE EXCLUDED.owners END`,
       [p.code, p.title, `${slugify(p.title)}-${p.code.toLowerCase()}`, p.creator, p.studio, p.catId, p.subId,
        p.status, p.priceMutez, p.editions, p.released, `rv_${randomBytes(16).toString("hex")}`,
-       p.description, p.mediaKey, p.licenceId, p.royaltyBps, p.sourceUrl, p.attribution, p.placed]);
+       p.description, p.mediaKey, p.licenceId, p.royaltyBps, p.sourceUrl, p.attribution, p.placed,
+       p.releasedGiven]);
   }
   await db.query("COMMIT");
 } catch (e) {

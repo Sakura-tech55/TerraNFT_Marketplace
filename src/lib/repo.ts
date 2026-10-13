@@ -132,7 +132,12 @@ export async function getMediaInfo(code: string): Promise<MediaInfo | null> {
   const rows = await db.execute(sql`
     SELECT media_key, 'work' AS kind, status, review_token FROM works WHERE code = ${code}
     UNION ALL
-    SELECT media_key, 'drop' AS kind, status, NULL AS review_token FROM drops WHERE code = ${code}
+    SELECT media_key, 'drop' AS kind,
+           /* a drop that reuses the image of a work not yet listed must not reveal it */
+           CASE WHEN EXISTS (SELECT 1 FROM works w WHERE w.media_key = d.media_key AND w.status <> 'Live')
+                THEN 'Unlisted' ELSE d.status END AS status,
+           NULL AS review_token
+    FROM drops d WHERE code = ${code}
     LIMIT 1`);
   const r = rows.rows[0];
   if (!r?.media_key) return null;
@@ -202,7 +207,9 @@ export type CategoryView = {
 export async function listCategories(): Promise<CategoryView[]> {
   const db = await getDb();
   const cats = await db.execute(sql`
-    SELECT c.id, c.name, c.slug, c.blurb, s.designs, s.designers, s.volume_minor
+    SELECT c.id, c.name, c.slug, c.blurb, s.volume_minor,
+           (SELECT count(*) FROM works w WHERE w.category_id = c.id AND w.status = 'Live')::int AS designs,
+           (SELECT count(DISTINCT w.creator_name) FROM works w WHERE w.category_id = c.id AND w.status = 'Live')::int AS designers
     FROM categories c LEFT JOIN category_stats s ON s.category_id = c.id
     ORDER BY c.sort`);
 
@@ -366,13 +373,20 @@ export type SalePoint = { hour: string; mutez: number; name: string; id: string 
 export type BuyerView = { handle: string; wallet: string; region: string; purchases: number; volumeMutez: number; since: string };
 export type KpiView = { label: string; value: string; sub: string; delta: string };
 
-export async function listHourlyHighs(): Promise<SalePoint[]> {
+/** Today's highest sale per hour. Outside the sales team, works that are not listed stay unnamed. */
+export async function listHourlyHighs(opts: { includeUnlisted?: boolean } = {}): Promise<SalePoint[]> {
   const db = await getDb();
-  const rows = await db.execute(sql`SELECT hour, amount_minor, work_code, work_title FROM market_hourly_high ORDER BY hour`);
-  return rows.rows.map((r) => ({
-    hour: String(r.hour), mutez: asMutez(r.amount_minor as number),
-    name: String(r.work_title ?? ""), id: String(r.work_code ?? ""),
-  }));
+  const rows = await db.execute(sql`
+    SELECT h.hour, h.amount_minor, h.work_code, h.work_title, w.status
+    FROM market_hourly_high h LEFT JOIN works w ON w.code = h.work_code
+    ORDER BY h.hour`);
+  return rows.rows.map((r) => {
+    const visible = opts.includeUnlisted || r.status === "Live";
+    return {
+      hour: String(r.hour), mutez: asMutez(r.amount_minor as number),
+      name: visible ? String(r.work_title ?? "") : "Unlisted work", id: visible ? String(r.work_code ?? "") : "",
+    };
+  });
 }
 
 export async function listTopBuyers(): Promise<BuyerView[]> {
@@ -437,6 +451,12 @@ export async function getUserById(id: string): Promise<UserView | null> {
   if (!/^\d{1,12}$/.test(id)) return null; /* also rejects cookies from the old wallet sign-in */
   const db = await getDb();
   const rows = await db.execute(sql`SELECT ${USER_COLS} FROM users WHERE id = ${Number(id)} AND email IS NOT NULL LIMIT 1`);
+  return rows.rows[0] ? userView(rows.rows[0]) : null;
+}
+
+export async function getUserByEmail(email: string): Promise<UserView | null> {
+  const db = await getDb();
+  const rows = await db.execute(sql`SELECT ${USER_COLS} FROM users WHERE lower(email) = ${email.trim().toLowerCase()} LIMIT 1`);
   return rows.rows[0] ? userView(rows.rows[0]) : null;
 }
 

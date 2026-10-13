@@ -23,6 +23,15 @@ import { getViewer } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
 
+/* route params can arrive encoded or not; a malformed one must not crash the page */
+function safeDecode(code: string): string {
+  try {
+    return decodeURIComponent(code);
+  } catch {
+    return code;
+  }
+}
+
 async function load(code: string): Promise<WorkView | null> {
   const work = await getWorkByCode(code);
   if (!work) return null;
@@ -32,7 +41,7 @@ async function load(code: string): Promise<WorkView | null> {
 
 export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
   const { code } = await params;
-  const work = await load(decodeURIComponent(code));
+  const work = await load(safeDecode(code));
   return work
     ? { title: `${work.name} by ${work.designer} — Cadastra`, robots: { index: false } }
     : { title: "Not found — Cadastra" };
@@ -40,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
 
 export default async function ItemPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const work = await load(decodeURIComponent(code));
+  const work = await load(safeDecode(code));
   if (!work) notFound();
 
   const [rate, sameCategory] = await Promise.all([

@@ -4,9 +4,11 @@
 
 import { formatTez } from "@/lib/currency";
 import type { CategoryView } from "@/lib/repo";
+import { EmptyChart } from "./EmptyChart";
 
 export function CategoryBars({ data }: { data: CategoryView[] }) {
-  const max = Math.max(...data.map((c) => c.designs));
+  if (!data.length) return <EmptyChart text="No categories yet." />;
+  const max = Math.max(1, ...data.map((c) => c.designs));
   const total = data.reduce((s, c) => s + c.designs, 0);
   const totalVolume = data.reduce((s, c) => s + c.volumeMutez, 0);
 

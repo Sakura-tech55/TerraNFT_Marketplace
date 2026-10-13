@@ -1,12 +1,13 @@
 /* Sign in with email and password.
 
-   One message for every failure, and the same work whether or not the email
-   exists, so the form cannot be used to find out who has an account. */
+   One message for every failure, and the same work whether or not the email exists,
+   so the form cannot be used to find out who has an account. */
 
 import { cookies } from "next/headers";
 import { getLoginByEmail, touchUser } from "@/lib/repo";
 import { dummyHash, verifyPassword } from "@/lib/password";
 import { SESSION_COOKIE, MissingSecretError, createSessionToken, sessionCookie } from "@/lib/session";
+import { restoreFromCopy } from "@/lib/account-copy";
 import { clientIp, rateLimit, tooMany } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -29,12 +30,13 @@ export async function POST(request: Request) {
     if (!limited.ok) return tooMany(limited.retryAfterSeconds);
   }
 
-  const found = email && password ? await getLoginByEmail(email) : null;
+  /* in temporary-database mode the account may live only in the browser's account copy */
+  const found = email && password ? (await getLoginByEmail(email)) ?? (await restoreFromCopy(email)) : null;
   const ok = await verifyPassword(password, found?.passwordHash ?? (await dummyHash()));
   if (!found || !ok) return Response.json({ ok: false, error: WRONG }, { status: 401 });
 
   try {
-    (await cookies()).set(SESSION_COOKIE, createSessionToken({ sub: found.user.id }), sessionCookie);
+    (await cookies()).set(SESSION_COOKIE, createSessionToken({ sub: found.user.id, em: found.user.email }), sessionCookie);
   } catch (e) {
     if (e instanceof MissingSecretError) {
       return Response.json({ ok: false, error: "Sign-in is unavailable: server not configured." }, { status: 503 });

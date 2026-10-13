@@ -1,10 +1,14 @@
 /* Create an account: email, password, a display name, the terms. Open to anyone.
-   The account is signed in straight away. */
+
+   Registering does not sign in: the new member goes to the sign-in page next.
+   In temporary-database mode the browser also receives an encrypted copy of the
+   account, so every server can recognise it (see session.ts). */
 
 import { cookies } from "next/headers";
 import { createUser } from "@/lib/repo";
 import { hashPassword, passwordProblem } from "@/lib/password";
-import { SESSION_COOKIE, MissingSecretError, createSessionToken, sessionCookie } from "@/lib/session";
+import { ACCOUNT_COOKIE, MissingSecretError, accountCookie, sealAccount } from "@/lib/session";
+import { isTemporaryDatabase } from "@/db/client";
 import { clientIp, rateLimit, tooMany } from "@/lib/rate-limit";
 import { TERMS_VERSION } from "@/lib/site";
 
@@ -24,7 +28,7 @@ export async function POST(request: Request) {
     return bad("Invalid body");
   }
 
-  const email = String(body.email ?? "").trim();
+  const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
   const displayName = String(body.displayName ?? "").trim().slice(0, 60) || null;
 
@@ -33,14 +37,18 @@ export async function POST(request: Request) {
   if (weak) return bad(weak);
   if (body.acceptTerms !== true) return bad("Accept the terms of sale to create an account.");
 
-  const user = await createUser({ email, passwordHash: await hashPassword(password), displayName, termsVersion: TERMS_VERSION });
+  const passwordHash = await hashPassword(password);
+  const user = await createUser({ email, passwordHash, displayName, termsVersion: TERMS_VERSION });
   if (!user) return bad("An account with that email already exists. Sign in instead.", 409);
 
-  try {
-    (await cookies()).set(SESSION_COOKIE, createSessionToken({ sub: user.id }), sessionCookie);
-  } catch (e) {
-    if (e instanceof MissingSecretError) return bad("Sign-in is unavailable: server not configured.", 503);
-    throw e;
+  if (isTemporaryDatabase()) {
+    try {
+      (await cookies()).set(ACCOUNT_COOKIE, sealAccount({ email, passwordHash, displayName, termsVersion: TERMS_VERSION }), accountCookie);
+    } catch (e) {
+      if (e instanceof MissingSecretError) return bad("Registration is unavailable: server not configured.", 503);
+      throw e;
+    }
   }
-  return Response.json({ ok: true, user });
+
+  return Response.json({ ok: true, email: user.email, displayName: user.displayName });
 }

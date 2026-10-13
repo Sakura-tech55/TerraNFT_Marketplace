@@ -42,7 +42,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!asset) return notFound();
 
   /* drops are announced publicly; works are public only once listed */
-  const listed = asset.kind === "drop" || asset.status === "Live";
+  /* drops are announced publicly unless they reuse an unlisted work's image */
+  const listed = asset.kind === "drop" ? asset.status !== "Unlisted" : asset.status === "Live";
   const reviewOk = sameToken(new URL(request.url).searchParams.get("rt"), asset.reviewToken);
 
   let tier: Tier | null = null;
