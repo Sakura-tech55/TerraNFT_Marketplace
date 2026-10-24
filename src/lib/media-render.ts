@@ -1,8 +1,8 @@
 /* ============================================================
    Rendering and caching image derivatives (server only).
 
-   Every image the site shows is a derivative of a private master
-   in /private: a watermarked preview, a clean 1000px image, or a
+   Every image the site shows is a derivative of a master file in
+   public/assets/: a watermarked preview, a clean 1000px image, or a
    creator portrait. Rendering with sharp is the expensive part,
    so each derivative is written once to MEDIA_CACHE_DIR and served
    from there afterwards. The cache key includes the master's size
@@ -10,13 +10,17 @@
    ============================================================ */
 
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 import { COMPANY_NAME } from "./site";
 
-export const MEDIA_ROOT = path.join(process.cwd(), "private");
+/* public/assets is the home of the masters; private/ is still read if they have not moved yet */
+const PUBLIC_ASSETS = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "assets");
+const OLD_PRIVATE = path.join(/*turbopackIgnore: true*/ process.cwd(), "private");
+export const MEDIA_ROOT = existsSync(PUBLIC_ASSETS) || !existsSync(OLD_PRIVATE) ? PUBLIC_ASSETS : OLD_PRIVATE;
 /* runtime data, not source: tell the bundler not to trace it into the build */
 /* serverless hosts (Vercel) can write only to the temp folder */
 const CACHE_DIR = path.resolve(

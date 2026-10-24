@@ -1,5 +1,5 @@
 {
- "_about": "Sources for the Terra Ledger catalogue. scripts/catalog-fetch.mjs downloads or renders every image into private/nft/ and writes private/nft/catalog.csv; then run npm run catalog:import. Prices marked in tez are demo prices unless they come from terraledger.org.",
+ "_about": "Sources for the Terra Ledger catalogue. scripts/catalog-fetch.mjs downloads or renders every image into public/assets/nft/ and writes public/assets/nft/catalog.csv; then run npm run catalog:import. Prices marked in tez are demo prices unless they come from terraledger.org.",
  "site": [
   {
    "code": "TL-0611",

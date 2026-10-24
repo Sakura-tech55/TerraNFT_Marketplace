@@ -26,9 +26,9 @@ const nextConfig: NextConfig = {
      originals for the image routes, and the demo database the build prepared. */
   outputFileTracingIncludes: {
     "/**": ["./.data/deploy-db.tar.gz"],
-    "/api/media/[id]": ["./private/nft/**/*"],
-    "/api/media/creator/[slug]": ["./private/creators/**/*"],
-    "/api/health": ["./private/nft/catalog.csv"],
+    "/api/media/[id]": ["./public/assets/nft/**/*", "./private/nft/**/*"],
+    "/api/media/creator/[slug]": ["./public/assets/creators/**/*", "./private/creators/**/*"],
+    "/api/health": ["./public/assets/nft/catalog.csv", "./private/nft/catalog.csv"],
   },
 };
 

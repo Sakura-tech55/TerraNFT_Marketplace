@@ -6,6 +6,7 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
 import { databaseUrl, getDb } from "@/db/client";
+import { MEDIA_ROOT } from "@/lib/media-render";
 import { sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +18,11 @@ export async function GET() {
     databaseMode: databaseUrl() ? "persistent" : process.env.VERCEL ? "temporary" : "local",
     sessionSecret: (process.env.SESSION_SECRET ?? "").length >= 16
       ? "configured"
-      : (process.env.DEPLOY_SESSION_SECRET ?? "").length >= 16 ? "generated for this deployment" : "missing",
-    imagesBundled: await access(path.join(process.cwd(), "private", "nft", "catalog.csv")).then(() => true, () => false),
+      : (process.env.DEPLOY_SESSION_SECRET ?? "").length >= 16
+        ? "generated for this deployment"
+        /* outside production the built-in development secret is used, so sign-in works */
+        : process.env.NODE_ENV !== "production" ? "development default" : "missing",
+    imagesBundled: await access(path.join(MEDIA_ROOT, "nft", "catalog.csv")).then(() => true, () => false),
   };
 
   try {

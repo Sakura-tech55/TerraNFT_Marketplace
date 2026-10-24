@@ -3,13 +3,13 @@
    Usage:  npm run catalog:fetch             (then: npm run catalog:import)
            npm run catalog:fetch -- --refresh   (re-download images already present)
 
-   Artwork lives in private/ (never in git), so this is how a fresh checkout gets it:
+   Rebuilds the artwork in public/assets/nft/ from its sources, if it is ever missing:
      site    terraledger.org's own assets — property and edition images, game art
      met     public-domain works from The Metropolitan Museum of Art Open Access
              (images released under CC0), with title, maker, date and source link
      studio  the Terra Ledger Studio generative series, rendered from code
 
-   Writes private/nft/{site,open-access,studio}/… and private/nft/catalog.csv. */
+   Writes public/assets/nft/{site,open-access,studio}/… and public/assets/nft/catalog.csv. */
 
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -17,7 +17,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { render } from "./lib/generative.mjs";
 
-const ROOT = path.join(process.cwd(), "private", "nft");
+import { NFT_DIR as ROOT, shown } from "./lib/assets.mjs";
 const refresh = process.argv.includes("--refresh");
 const MET = "https://collectionapi.metmuseum.org/public/collection/v1/objects";
 const MAX = 2000; /* long side kept; members see 1000px, previews 480px */
@@ -176,7 +176,7 @@ const cell = (v) => {
 const csv = [COLS.join(","), ...rows.map((r) => COLS.map((c) => cell(c === "royalty_pct" ? (r.royalty_pct ?? 10) : r[c])).join(","))].join("\n") + "\n";
 await writeFile(path.join(ROOT, "catalog.csv"), csv);
 
-console.log(`\nWrote private/nft/catalog.csv with ${rows.length} works.`);
+console.log(`\nWrote ${shown(ROOT)}/catalog.csv with ${rows.length} works.`);
 if (failed.length) {
   console.warn(`Skipped ${failed.length}: ${failed.join("; ")}`);
   process.exitCode = 1;

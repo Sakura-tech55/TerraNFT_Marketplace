@@ -1,6 +1,6 @@
 /* Attaches portraits to the top-10 creators.
 
-   Usage:  npm run creators:photos               (reads private/creators/credits.json)
+   Usage:  npm run creators:photos               (reads public/assets/creators/credits.json)
            npm run creators:photos -- --dry-run
 
    A portrait is a photograph of a real, named person, so this script is strict:
@@ -14,7 +14,7 @@
    The image is served as supplied (resized only), never cropped or altered;
    `focus` (CSS object-position, e.g. "50% 30%") keeps the face in the frame.
 
-   Format: docs/creator-credits.example.json. Files go in private/creators/. */
+   Format: docs/creator-credits.example.json. Files go in public/assets/creators/. */
 
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -22,7 +22,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { connect } from "./lib/db.mjs";
 
-const DIR = path.join(process.cwd(), "private", "creators");
+import { CREATORS_DIR as DIR, shown } from "./lib/assets.mjs";
 const dryRun = process.argv.includes("--dry-run");
 const manifestPath = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? path.join(DIR, "credits.json");
 
@@ -31,7 +31,7 @@ try {
   entries = JSON.parse(await readFile(manifestPath, "utf8"));
 } catch (e) {
   console.error(`Cannot read ${manifestPath}: ${e.code === "ENOENT" ? "file not found" : e.message}`);
-  console.error("Copy docs/creator-credits.example.json to private/creators/credits.json and fill it in.");
+  console.error(`Copy docs/creator-credits.example.json to ${shown(DIR)}/credits.json and fill it in.`);
   process.exit(1);
 }
 if (!Array.isArray(entries)) {
@@ -94,7 +94,7 @@ for (const [i, e] of entries.entries()) {
   const rel = String(e.file ?? "").replace(/\\/g, "/").replace(/^\/+/, "");
   const file = path.join(DIR, rel);
   let size = null;
-  if (!rel || !file.startsWith(DIR + path.sep)) fail(`"file" must be a file name inside private/creators/`);
+  if (!rel || !file.startsWith(DIR + path.sep)) fail(`"file" must be a file name inside ${shown(DIR)}/`);
   else {
     try {
       const buf = await readFile(file);
@@ -108,7 +108,7 @@ for (const [i, e] of entries.entries()) {
         if (Math.min(meta.width, meta.height) < 600) warnings.push(`${at}: ${rel} is ${meta.width}×${meta.height}; 900px or more looks sharp`);
       }
     } catch (x) {
-      fail(`cannot read private/creators/${rel} (${x.code === "ENOENT" ? "file not found" : x.message})`);
+      fail(`cannot read ${shown(DIR)}/${rel} (${x.code === "ENOENT" ? "file not found" : x.message})`);
     }
   }
 

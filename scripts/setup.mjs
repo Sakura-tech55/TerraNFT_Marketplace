@@ -6,7 +6,7 @@
      3. loads the demo data on an empty database
      4. downloads and renders the catalogue images, the first time only
      5. imports the catalogue, the first time only
-     6. attaches artist photos, if private/creators/credits.json is present
+     6. attaches artist photos, if public/assets/creators/credits.json is present
 
    Each step is one of the scripts in this folder, run in turn — PGlite allows
    one process at a time, so they never overlap with each other or the server. */
@@ -16,6 +16,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { connect } from "./lib/db.mjs";
+import { CREATORS_DIR, NFT_DIR } from "./lib/assets.mjs";
 
 const ROOT = process.cwd();
 const say = (m) => console.log(`\x1b[36m[cadastra]\x1b[0m ${m}`);
@@ -88,7 +89,7 @@ if (c.categories === 0) {
 }
 
 /* 4. catalogue images */
-const csv = path.join(ROOT, "private", "nft", "catalog.csv");
+const csv = path.join(NFT_DIR, "catalog.csv");
 if (!existsSync(csv)) {
   say("First run: downloading and rendering the catalogue images (a few minutes)…");
   if (!run("catalog-fetch.mjs", [], { optional: true }) && !existsSync(csv)) {
@@ -104,7 +105,7 @@ if (c.catalogue === 0 && existsSync(csv)) {
 }
 
 /* 6. artist photos */
-if (c.photos === 0 && existsSync(path.join(ROOT, "private", "creators", "credits.json"))) {
+if (c.photos === 0 && existsSync(path.join(CREATORS_DIR, "credits.json"))) {
   say("Attaching artist photos…");
   run("creator-photos.mjs", [], { optional: true });
 }

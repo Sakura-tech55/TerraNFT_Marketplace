@@ -1,11 +1,11 @@
 /* Imports the NFT catalogue from a spreadsheet.
 
-   Usage:  npm run catalog:import                       (reads private/nft/catalog.csv)
+   Usage:  npm run catalog:import                       (reads public/assets/nft/catalog.csv)
            npm run catalog:import -- path/to/file.csv
            npm run catalog:import -- --dry-run          (check everything, write nothing)
 
    One row per work. Template and column notes: docs/catalog-template.csv and
-   README → "Adding the catalogue". Image files go in private/nft/ (never in git).
+   README → "Adding the catalogue". Image files go in public/assets/nft/.
 
    Everything is checked before anything is written; if any row has an error the
    import stops and the database is untouched. Re-running is safe: rows are
@@ -19,7 +19,7 @@ import sharp from "sharp";
 import { connect } from "./lib/db.mjs";
 import { parseCsv } from "./lib/csv.mjs";
 
-const NFT_DIR = path.join(process.cwd(), "private", "nft");
+import { NFT_DIR, shown } from "./lib/assets.mjs";
 const MUTEZ = 1_000_000;
 const STATUSES = ["Live", "Draft", "In review", "Revision requested"];
 const MIN_WIDTH = 1000; /* the clean member image is 1000px wide */
@@ -133,8 +133,8 @@ for (const row of rows) {
   /* the image */
   const rel = String(row.file ?? "").replace(/\\/g, "/").replace(/^\/+/, "");
   const file = path.join(NFT_DIR, rel);
-  if (!rel) err(row, "file is required (a file name inside private/nft/)");
-  else if (!file.startsWith(NFT_DIR + path.sep)) err(row, `file "${row.file}" must be inside private/nft/`);
+  if (!rel) err(row, `file is required (a file name inside ${shown(NFT_DIR)}/)`);
+  else if (!file.startsWith(NFT_DIR + path.sep)) err(row, `file "${row.file}" must be inside ${shown(NFT_DIR)}/`);
   else {
     if (seenFiles.has(rel)) err(row, `file ${rel} is also used on line ${seenFiles.get(rel)}`);
     seenFiles.set(rel, row._line);
@@ -148,7 +148,7 @@ for (const row of rows) {
       if (!meta.width) err(row, `${rel} is not a readable image`);
       else if (meta.width < MIN_WIDTH) warn(row, `${rel} is ${meta.width}px wide; ${MIN_WIDTH}px or more keeps members' images sharp`);
     } catch (e) {
-      err(row, `cannot read private/nft/${rel} (${e.code === "ENOENT" ? "file not found" : e.message})`);
+      err(row, `cannot read ${shown(NFT_DIR)}/${rel} (${e.code === "ENOENT" ? "file not found" : e.message})`);
     }
   }
 
