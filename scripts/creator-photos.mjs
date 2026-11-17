@@ -24,6 +24,7 @@ import { connect } from "./lib/db.mjs";
 
 import { CREATORS_DIR as DIR, shown } from "./lib/assets.mjs";
 const dryRun = process.argv.includes("--dry-run");
+const MIN_SIDE = 240; /* px — the width of the portrait frame on /creators */
 const manifestPath = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? path.join(DIR, "credits.json");
 
 let entries;
@@ -105,7 +106,10 @@ for (const [i, e] of entries.entries()) {
       if (!meta.width || !meta.height) fail(`${rel} is not a readable image`);
       else {
         size = { width: meta.width, height: meta.height };
-        if (Math.min(meta.width, meta.height) < 600) warnings.push(`${at}: ${rel} is ${meta.width}×${meta.height}; 900px or more looks sharp`);
+        /* the showcase frame is 240px wide: anything smaller is stretched and shows blurred and blocky */
+        if (Math.min(meta.width, meta.height) < MIN_SIDE) {
+          fail(`${rel} is only ${meta.width}×${meta.height} — it would be stretched and blurry. Supply at least ${MIN_SIDE}px on the short side (900px or more looks sharp).`);
+        } else if (Math.min(meta.width, meta.height) < 600) warnings.push(`${at}: ${rel} is ${meta.width}×${meta.height}; 900px or more looks sharp`);
       }
     } catch (x) {
       fail(`cannot read ${shown(DIR)}/${rel} (${x.code === "ENOENT" ? "file not found" : x.message})`);

@@ -295,6 +295,8 @@ export type CreatorView = {
     licence: string | null; licenceUrl: string | null; author: string | null; attribution: string | null;
     sourceUrl: string | null; focus: string | null; subject: string | null;
     kind: "portrait" | "avatar";
+    /** Changes whenever the photo file does, so a replaced portrait is not served from a browser cache. */
+    version: string;
   } | null;
   works: CreatorWorkView[];
 };
@@ -340,6 +342,7 @@ export async function listCreators(): Promise<CreatorView[]> {
           focus: r.photo_focus ? String(r.photo_focus) : null,
           subject: r.photo_subject ? String(r.photo_subject) : null,
           kind: r.photo_kind === "avatar" ? "avatar" as const : "portrait" as const,
+          version: seedFrom(String(r.photo_key)).toString(36),
         }
       : null,
     works: works.rows

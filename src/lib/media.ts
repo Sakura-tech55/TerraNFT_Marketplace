@@ -14,5 +14,8 @@
 export const assetSrc = (id: string, review?: string) =>
   `/api/media/${encodeURIComponent(id)}${review ? `?rt=${encodeURIComponent(review)}` : ""}`;
 
-/** URL for a creator's confirmed portrait. Only valid when the creator has a `photo`. */
-export const creatorPhotoSrc = (slug: string) => `/api/media/creator/${encodeURIComponent(slug)}`;
+/** URL for a creator's confirmed portrait. Only valid when the creator has a `photo`.
+    `version` (photo.version) changes with the file: the response is cached publicly for an
+    hour, so without it a replaced portrait would keep showing the old image. */
+export const creatorPhotoSrc = (slug: string, version?: string) =>
+  `/api/media/creator/${encodeURIComponent(slug)}${version ? `?v=${encodeURIComponent(version)}` : ""}`;

@@ -81,7 +81,7 @@ export function CreatorSlideshow({ creators }: { creators: CreatorView[] }) {
           >
             <span className="strip-photo">
               {c.photo ? (
-                <Image src={creatorPhotoSrc(c.slug)} alt="" fill unoptimized sizes="44px"
+                <Image src={creatorPhotoSrc(c.slug, c.photo.version)} alt="" fill unoptimized sizes="44px"
                   style={{ objectFit: "cover", objectPosition: c.photo.focus ?? "50% 30%" }} />
               ) : (
                 <TokenArt seed={c.slug} hue={c.hue} variant="portrait" />
@@ -108,7 +108,7 @@ export function CreatorSlideshow({ creators }: { creators: CreatorView[] }) {
             <div className="slide-photo-col">
               <div className="slide-photo">
                 {c.photo ? (
-                  <Image src={creatorPhotoSrc(c.slug)} alt={c.photo.subject ?? c.name} fill unoptimized sizes="240px"
+                  <Image src={creatorPhotoSrc(c.slug, c.photo.version)} alt={c.photo.subject ?? c.name} fill unoptimized sizes="240px"
                     priority={i === 0} style={{ objectFit: "cover", objectPosition: c.photo.focus ?? "50% 30%" }} />
                 ) : (
                   <TokenArt seed={c.slug} hue={c.hue} variant="portrait" label={`${c.name} — portrait placeholder`} />
@@ -119,8 +119,17 @@ export function CreatorSlideshow({ creators }: { creators: CreatorView[] }) {
               {c.photo && c.photo.kind !== "avatar" && (
                 <p className="photo-credit">
                   {c.photo.subject ?? c.name}
-                  {c.photo.licence === "PROPRIETARY" ? " · Used with permission" : c.photo.licence ? ` · ${c.photo.licence}` : ""}
-                  {c.photo.author ? ` · Photo: ${c.photo.author}` : ""}
+                  {c.photo.licence === "PROPRIETARY" ? " · Used with permission" : c.photo.licence ? (
+                    /* open licences (CC BY-SA) require a link to the licence and the source */
+                    <> · {c.photo.licenceUrl
+                      ? <a href={c.photo.licenceUrl} target="_blank" rel="noopener noreferrer license">{c.photo.licence}</a>
+                      : c.photo.licence}</>
+                  ) : ""}
+                  {c.photo.author ? (
+                    <> · Photo: {c.photo.sourceUrl
+                      ? <a href={c.photo.sourceUrl} target="_blank" rel="noopener noreferrer">{c.photo.author}</a>
+                      : c.photo.author}{c.photo.attribution?.endsWith("cropped") ? " (cropped)" : ""}</>
+                  ) : ""}
                 </p>
               )}
               {!c.photo && <p className="photo-credit">{c.anonymous ? "Anonymous artist · no portrait exists" : "Portrait pending"}</p>}

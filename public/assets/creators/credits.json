@@ -1,11 +1,13 @@
 [
   {
     "creator": "beeple",
-    "file": "1- Beeple.jpeg",
-    "subject": "Beeple (Mike Winkelmann)",
-    "licence": "PROPRIETARY",
-    "permission": "Rights secured by Terra Ledger; files supplied by the product owner on 2026-10-09.",
-    "confirmedBy": "Product owner (supplied and labelled the files, 2026-10-09)",
+    "file": "1-Beeple (Art Basel 2025).jpg",
+    "subject": "Beeple (Mike Winkelmann) at Art Basel Miami Beach, 2025",
+    "licence": "CC-BY-SA-4.0",
+    "author": "Jennifer 8. Lee / WikiPortraits",
+    "attribution": "Photo: Jennifer 8. Lee / WikiPortraits, CC BY-SA 4.0, via Wikimedia Commons; cropped",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beeple,_Artist,_at_Art_Basel_Miami_Beach_2025_01.jpg",
+    "confirmedBy": "Wikimedia Commons file description, which names the subject as Mike Winkelmann (Beeple); checked 2026-11-17. Replaces the 92×92 file supplied 2026-10-09.",
     "focus": "50% 30%"
   },
   {
@@ -30,11 +32,13 @@
   },
   {
     "creator": "larva-labs",
-    "file": "4-Larva Labs.jpeg",
-    "subject": "Larva Labs co-founder (as supplied)",
-    "licence": "PROPRIETARY",
-    "permission": "Rights secured by Terra Ledger; files supplied by the product owner on 2026-10-09.",
-    "confirmedBy": "Product owner (supplied and labelled the files, 2026-10-09)",
+    "file": "4-Larva Labs (Pompidou 2023).jpg",
+    "subject": "John Watkinson and Matt Hall of Larva Labs (seated, left) speaking about CryptoPunks at the Centre Pompidou, 2023",
+    "licence": "CC-BY-SA-4.0",
+    "author": "Copyleft (Wikimedia Commons user)",
+    "attribution": "Photo: Copyleft, CC BY-SA 4.0, via Wikimedia Commons; cropped",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:2023_John_Watkinson_and_Matt_Hall_(Larva_Labs)_speaking_about_CryptoPunk.jpg",
+    "confirmedBy": "Wikimedia Commons file description, which names John Watkinson and Matt Hall (Larva Labs); checked 2026-11-17. Replaces the 92×92 file supplied 2026-10-09.",
     "focus": "50% 30%"
   },
   {

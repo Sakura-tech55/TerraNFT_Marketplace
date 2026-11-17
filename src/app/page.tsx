@@ -544,7 +544,7 @@ export default async function Home() {
                 <span className="artist-mini-photo">
                   {c.photo ? (
                     <Image
-                      src={creatorPhotoSrc(c.slug)}
+                      src={creatorPhotoSrc(c.slug, c.photo.version)}
                       alt={c.photo.subject ?? c.name}
                       fill
                       unoptimized
